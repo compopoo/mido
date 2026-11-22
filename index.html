@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<!-- 운동일지 앱 · 버전 2026-11-22 -->
+<!-- 운동일지 앱 · 버전 2026-11-23 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#121316">
@@ -96,12 +96,17 @@
   .timer button{background:#3b2717;border:1px solid #5a3519;color:var(--acc2);border-radius:9px;padding:7px 9px;font-size:12.5px;cursor:pointer}
   .timer.end .in{background:#163322;border-color:#2c6a45} .timer.end .t{color:var(--ok)}
   /* history */
-  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
-  .cal .h{font-size:11px;color:var(--dim);padding:4px 0}
-  .cal .c{aspect-ratio:1;border-radius:10px;background:var(--card2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;cursor:pointer;position:relative}
-  .cal .c.empty{background:none;cursor:default}
-  .cal .c.today{outline:1.5px solid var(--acc)}
-  .cal .c .dot{width:7px;height:7px;border-radius:50%;margin-top:3px}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);margin:0 -4px}
+  .cal .h{font-size:12px;font-weight:700;color:var(--sub);padding:8px 0;text-align:center;border-bottom:1px solid var(--line)}
+  .cal .h.sat,.cal .c.sat .num{color:#6fa8ff} .cal .h.sun,.cal .c.sun .num{color:#ff6b6b}
+  .cal .c{min-height:64px;border-bottom:1px solid var(--line);padding:6px 3px 5px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative}
+  .cal .c:not(:nth-child(7n)){border-right:1px solid var(--line)}
+  .cal .c .num{font-size:13px;font-weight:500;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%}
+  .cal .c.out .num{opacity:.3} .cal .c.out{cursor:default}
+  .cal .c.today .num{background:var(--acc);color:#1a0d05!important;font-weight:700}
+  .cal .c.sel{background:rgba(255,122,61,.13)}
+  .cal .c .plab{font-size:10px;font-weight:700;border-radius:5px;padding:1px 4px;color:#111;max-width:100%;overflow:hidden;white-space:nowrap}
+  .cal .c .plab.plan{background:none;border:1px dashed var(--dim);color:var(--sub)}
   .hist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
   .hist-item:last-child{border-bottom:none}
   .hist-item .dd{font-family:"JetBrains Mono",monospace;color:var(--sub);font-size:13px;width:70px;white-space:nowrap}
@@ -128,7 +133,6 @@
   .mbox b{font-size:17px;display:block} .mbox p{color:var(--sub);font-size:14px;line-height:1.6;margin:8px 0 14px;white-space:pre-line}
   .mbox .btn{padding:12px}
   .mbox .btn.danger{background:var(--bad);color:#fff}
-  .cal .c.sel{background:var(--acc);color:#1a0d05;font-weight:700} .cal .c.sel .dot{outline:1.5px solid #1a0d05}
   .day .dhead{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
   .dline{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
   .dline b{display:block;font-weight:500} .dline span{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--sub)}
@@ -142,6 +146,7 @@
   .wd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:7px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
   .wd .w{font-size:11px;color:var(--dim)} .wd .n{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700}
   .wd .lab{font-size:10px;font-weight:700;border-radius:5px;padding:1px 4px;min-height:16px;max-width:92%;overflow:hidden;white-space:nowrap;color:var(--sub)}
+  .wd.sat .w,.wd.sat .n{color:#6fa8ff} .wd.sun .w,.wd.sun .n{color:#ff6b6b}
   .wd.today{border-color:var(--acc)} .wd.sel{background:var(--card2);box-shadow:inset 0 0 0 1.5px var(--acc)}
   .restsel{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc2);font-family:"JetBrains Mono",monospace;font-size:12px;padding:2px 4px;margin-left:2px;outline:none}
   .exmemo{width:100%;margin-top:8px;background:transparent;border:none;border-bottom:1px dashed var(--line);padding:8px 2px;font-size:13px;color:var(--sub);outline:none}
@@ -403,7 +408,7 @@ function weekStrip(date){
   for(let i=0;i<7;i++){ const d=addDays(ws,i), dd=parse(d);
     const l=S.local[d]||S.logs[d]; const done=l&&doneSets(l)>0; if(done) n++;
     const lab = l&&l.exercises.length ? (PARTS[partsOf(l).filter(p=>!['warmup','cardio'].includes(p))[0]]||'') : '';
-    h+=`<button class="wd ${d===date?'sel':''} ${d===td?'today':''}" data-act="open" data-d="${d}">
+    h+=`<button class="wd ${d===date?'sel':''} ${d===td?'today':''} ${dd.getDay()===6?'sat':dd.getDay()===0?'sun':''}" data-act="open" data-d="${d}">
       <span class="w">${DOW[dd.getDay()]}</span><span class="n">${dd.getDate()}</span>
       <span class="lab" style="${done?`background:${colorOf(l)};color:#111`:(lab?'border:1px dashed var(--dim)':'')}">${esc(lab)||'&nbsp;'}</span></button>`; }
   return h+`</div><div class="muted" style="margin:-4px 2px 12px;text-align:right">이번 주 ${n}일 운동</div>`;
@@ -418,13 +423,14 @@ function renderHistory(){
   const lead = (first.getDay()+6)%7;
   const logs = allLogs(); const byDate = {}; logs.forEach(l=>byDate[l.date]=l);
   let h = `<div class="datebar"><button class="icon" data-act="mon" data-n="-1">‹</button><div class="d">${y}년 ${mo}월</div><button class="icon" data-act="mon" data-n="1">›</button></div>
-  <div class="card"><div class="cal">${['월','화','수','목','금','토','일'].map(x=>`<div class="h">${x}</div>`).join('')}`;
-  for(let i=0;i<lead;i++) h+=`<div class="c empty"></div>`;
-  for(let d=1; d<=days; d++){
-    const ds = `${m}-${String(d).padStart(2,'0')}`, l = byDate[ds];
-    const col = l && doneSets(l) ? colorOf(l) : (l ? 'var(--dim)' : null);
-    h+=`<div class="c ${ds===todayStr()?'today':''} ${ds===S.calSel?'sel':''}" data-act="calsel" data-d="${ds}">${d}${col?`<span class="dot" style="background:${col}"></span>`:''}</div>`;
-  }
+  <div class="card" style="padding:10px 12px 12px"><div class="cal">${['월','화','수','목','금','토','일'].map((x,i)=>`<div class="h ${i===5?'sat':i===6?'sun':''}">${x}</div>`).join('')}`;
+  const cell=(ds,inMonth)=>{ const dd=parse(ds), wd=dd.getDay(), l=byDate[ds];
+    const done=l&&doneSets(l)>0, lab=l&&l.exercises.length? (PARTS[partsOf(l).filter(p=>!['warmup','cardio'].includes(p))[0]]||'') : '';
+    const cls=[wd===6?'sat':'', wd===0?'sun':'', ds===todayStr()?'today':'', ds===S.calSel?'sel':'', inMonth?'':'out'].join(' ');
+    return `<div class="c ${cls}" ${inMonth?`data-act="calsel" data-d="${ds}"`:''}><span class="num">${dd.getDate()}</span>${lab&&inMonth?`<span class="plab ${done?'':'plan'}" style="${done?`background:${colorOf(l)}`:''}">${esc(lab)}</span>`:''}</div>`; };
+  for(let i=lead;i>0;i--) h+=cell(ymd(new Date(y,mo-1,1-i)),false);
+  for(let d=1; d<=days; d++) h+=cell(`${m}-${String(d).padStart(2,'0')}`,true);
+  const tail=(7-(lead+days)%7)%7; for(let i=1;i<=tail;i++) h+=cell(ymd(new Date(y,mo,i)),false);
   h += `</div><div class="legend" style="margin-top:10px"><span style="color:var(--chest)">●</span> 가슴 &nbsp; <span style="color:var(--back)">●</span> 등 &nbsp; <span style="color:var(--legs)">●</span> 하체 &nbsp; <span style="color:var(--shoulder)">●</span> 어깨</div></div>`;
   h += dayDetail(S.calSel, byDate[S.calSel]);
   const month = logs.filter(l=>l.date.startsWith(m)).reverse();
