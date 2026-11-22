@@ -129,6 +129,7 @@
   .muted{color:var(--dim);font-size:12.5px}
   .hidden{display:none!important}
   .lbl{font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px} .lbl .muted{font-weight:400;font-size:12.5px}
+  .btn.outline{background:transparent;border:1.5px solid var(--line);color:var(--sub)}
   .savenote{font-size:12.5px;color:var(--dim);text-align:center;margin:-4px 0 10px}
   .runrow{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px}
   .runrow .unit{position:relative} .runrow .unit:after{content:attr(data-u);position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);pointer-events:none}
@@ -291,7 +292,7 @@ function ask(title, text, danger){
   });
 }
 function draftDaily(date){ if(!S.dd[date]){ const l=getLog(date); const b=(l&&l.daily)||{}; S.dd[date]={push:(b.push||['','','']).slice(),pullup:!!b.pullup,run:{km:'',min:'',sec:'',...(b.run||{})}}; } return S.dd[date]; }
-function markDaily(){ const b=document.getElementById('saveDaily'); if(b){ b.className='btn'; b.textContent='매일 루틴 저장'; } }
+function markDaily(){ const b=document.getElementById('saveDaily'); if(b){ b.className='btn'; } }
 function saved(l){ return !!(l && l.finishedAt && doneSets(l)>0); }
 function dailyOf(l,date){ return S.dd[date] || (l&&l.daily) || {push:['','',''],pullup:false,run:{km:'',min:'',sec:''}}; }
 function runOf(l){ return (l&&l.daily&&l.daily.run)||{km:'',min:'',sec:''}; }
@@ -388,15 +389,15 @@ ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 �
   }
   const dv=dailyOf(l,date), dr=dv.run||{km:'',min:'',sec:''}, dirty=!!S.dd[date];
   h += `<div class="sec-title">매일 루틴</div><div class="card">
-    <div class="lbl">아침 푸시업 <span class="muted">(정자세 최대 개수)</span></div>
+    <div class="lbl">푸쉬업</div>
     <div class="daily">${[0,1,2].map(i=>`<input inputmode="numeric" placeholder="${i+1}세트" value="${esc(dv.push[i])}" data-in="push" data-i="${i}">`).join('')}</div>
-    <div class="toggle"><span class="lbl" style="margin:0">밤 풀업 루틴 ${l.exercises.some(e=>e.part==='back')?'<span class="muted">(등 하는 날은 쉬기)</span>':''}</span><div class="sw ${dv.pullup?'on':''}" data-act="pullup"></div></div>
+    <div class="toggle"><span class="lbl" style="margin:0">풀업</span><div class="sw ${dv.pullup?'on':''}" data-act="pullup"></div></div>
     <div class="lbl" style="margin-top:14px">러닝</div>
     <div class="runrow"><div class="unit" data-u="km"><input inputmode="decimal" placeholder="거리" value="${esc(dr.km)}" data-in="run" data-f="km"></div>
       <div class="unit" data-u="분"><input inputmode="numeric" placeholder="시간" value="${esc(dr.min)}" data-in="run" data-f="min"></div>
       <div class="unit" data-u="초"><input inputmode="numeric" placeholder="0" value="${esc(dr.sec)}" data-in="run" data-f="sec"></div></div>
     <div class="pace" id="pace">${paceText(dr)?`페이스 <b>${paceText(dr)}</b> · ${speedText(dr)}`:'거리와 시간을 넣으면 km당 페이스가 나와요'}</div>
-    <button class="btn ${dirty?'':'sec'}" id="saveDaily" style="width:100%;padding:12px;margin-top:14px" data-act="savedaily">${dirty?'매일 루틴 저장':'저장됨'}</button>
+    <button class="btn ${dirty?'':'outline'}" id="saveDaily" style="width:100%;padding:12px;margin-top:14px" data-act="savedaily">저장</button>
   </div>`;
   $('#view').innerHTML = h;
 }
