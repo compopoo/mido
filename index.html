@@ -259,7 +259,7 @@ const num = v => { const n=parseFloat(v); return isFinite(n)?n:null; };
 const e1rm = (w,r) => (w&&r) ? (r===1? w : w*(1+r/30)) : 0;
 const uid = () => Math.random().toString(36).slice(2,9);
 const fmt = n => (Math.round(n*10)/10).toString();
-const weekStart = s => { const d=parse(s); const k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); return ymd(d); };
+const weekStart = s => { const d=parse(s); d.setDate(d.getDate()-d.getDay()); return ymd(d); };
 
 /* ---------- 상태 ---------- */
 const S = { my:null, picker:null, editor:null, exFilter:'all', tab:'today', date:todayStr(), logs:{}, local:{}, db:null, mode:'loading', calMonth:null, statsWeek:null, armed:null, progEx:null };
@@ -420,10 +420,10 @@ function renderHistory(){
   S.calMonth = m; if(!S.calSel) S.calSel = S.date;
   const [y,mo] = m.split('-').map(Number);
   const first = new Date(y,mo-1,1), days = new Date(y,mo,0).getDate();
-  const lead = (first.getDay()+6)%7;
+  const lead = first.getDay();
   const logs = allLogs(); const byDate = {}; logs.forEach(l=>byDate[l.date]=l);
   let h = `<div class="datebar"><button class="icon" data-act="mon" data-n="-1">‹</button><div class="d">${y}년 ${mo}월</div><button class="icon" data-act="mon" data-n="1">›</button></div>
-  <div class="card" style="padding:10px 12px 12px"><div class="cal">${['월','화','수','목','금','토','일'].map((x,i)=>`<div class="h ${i===5?'sat':i===6?'sun':''}">${x}</div>`).join('')}`;
+  <div class="card" style="padding:10px 12px 12px"><div class="cal">${['일','월','화','수','목','금','토'].map((x,i)=>`<div class="h ${i===6?'sat':i===0?'sun':''}">${x}</div>`).join('')}`;
   const cell=(ds,inMonth)=>{ const dd=parse(ds), wd=dd.getDay(), l=byDate[ds];
     const done=l&&doneSets(l)>0, lab=l&&l.exercises.length? (PARTS[partsOf(l).filter(p=>!['warmup','cardio'].includes(p))[0]]||'') : '';
     const cls=[wd===6?'sat':'', wd===0?'sun':'', ds===todayStr()?'today':'', ds===S.calSel?'sel':'', inMonth?'':'out'].join(' ');
