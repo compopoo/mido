@@ -60,6 +60,7 @@
   .chk{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--dim);font-size:18px;cursor:pointer}
   .srow.done input,.srow.done select{background:#1d2a22;border-color:#2c4a37;color:#c9f2d7}
   .srow.done .chk{background:var(--ok);border-color:var(--ok);color:#0d2416;font-weight:900}
+  .srow.c3,.shead.c3{grid-template-columns:28px 1fr 1fr 1fr 52px}
   .shead{display:grid;grid-template-columns:28px 1fr 1fr 52px;gap:6px;font-size:11px;color:var(--dim);text-align:center;margin-bottom:2px}
   .ex-foot{display:flex;gap:8px;margin-top:10px;align-items:center}
   .ghost{background:none;border:1px dashed var(--line);border-radius:10px;padding:8px 10px;color:var(--sub);cursor:pointer;font-size:13px}
@@ -306,9 +307,14 @@ function hms(ms){ const t=Math.max(0,Math.floor(ms/1000)), h=Math.floor(t/3600),
 function durLong(l){ const t=Math.floor(durMs(l)/1000), h=Math.floor(t/3600), m=Math.floor(t%3600/60), x=t%60; return (h?`${h}시간 `:'')+(h||m?`${m}분 `:'')+`${x}초`; }
 function durText(l){ const m=Math.floor(durMs(l)/60000); if(!l.startedAt) return '0분'; return m>=60? `${Math.floor(m/60)}시간 ${m%60}분` : `${m}분`; }
 setInterval(()=>{ const el=document.getElementById('elapsed'); if(!el||S.tab!=='today') return; const l=getLog(S.date); if(l&&l.startedAt&&!l.finishedAt) el.textContent=hms(durMs(l)); },1000);
+const CARDIO_FIELDS = { '천국의 계단': [['inc','경사도','decimal'],['spd','속도','decimal'],['min','시간','numeric','분']] };
+function fieldsOf(e){ return CARDIO_FIELDS[e.name] || null; }
+function blankSet(e){ const f=fieldsOf(e); if(!f) return {w:'',r:'',rir:'',done:false}; const o={done:false}; f.forEach(([k])=>o[k]=''); return o; }
+function fmtSet(e,s){ const f=fieldsOf(e); if(f) return `경사 ${s.inc||'-'} · 속도 ${s.spd||'-'} · ${s.min||'-'}분`; return num(s.w)?`${s.w}×${s.r}`:`${s.r}회`; }
 function newExercise(name, part, date, sets){
   const p=prevFor(name,date); const n=sets||(p?p.sets.length:3);
-  return {id:uid(),name,part,target:'',rest:restPrefs()[name]||restFor(name,part),memo:'',sets:Array.from({length:n},()=>({w:'',r:'',rir:'',done:false}))};
+  const e={id:uid(),name,part,target:'',rest:restPrefs()[name]||restFor(name,part),memo:''}; const cnt = fieldsOf(e) ? (sets||1) : n;
+  e.sets=Array.from({length:cnt},()=>blankSet(e)); return e;
 }
 function getLog(date){
   if (S.local[date]) return S.local[date];
@@ -403,17 +409,19 @@ ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 �
 }
 function exCard(e,ei,date){
   const prev = prevFor(e.name, date);
-  const best = Math.max(0,...e.sets.filter(s=>s.done).map(s=>e1rm(num(s.w),num(s.r))));
-  const prevTxt = prev ? `<b>지난번 ${parse(prev.date).getMonth()+1}/${parse(prev.date).getDate()}</b> · ${prev.sets.map(s=>`${s.w||'-'}×${s.r||'-'}`).join('  ')}` : '첫 기록이에요';
+  const F=fieldsOf(e);
+  const best = F?0:Math.max(0,...e.sets.filter(s=>s.done).map(s=>e1rm(num(s.w),num(s.r))));
+  const prevTxt = prev ? `<b>지난번 ${parse(prev.date).getMonth()+1}/${parse(prev.date).getDate()}</b> · ${prev.sets.map(s=>F?fmtSet(e,s):`${s.w||'-'}×${s.r||'-'}`).join('  ')}` : '첫 기록이에요';
   const armed = S.armed===e.id;
   return `<div class="card" data-ex="${ei}">
     <div class="ex-head"><div class="ex-name"><span class="tag" style="background:var(--${e.part})">${PARTS[e.part]||''}</span>${esc(e.name)}
-      <div class="target">${e.sets.length}세트${e.target?` × ${esc(e.target)}회`:''} · 휴식 <select class="restsel" data-in="rest" data-ei="${ei}">${REST_OPTS.map(v=>`<option value="${v}" ${(+e.rest||90)===v?'selected':''}>${restLabel(v)}</option>`).join('')}${REST_OPTS.includes(+e.rest)?'':`<option value="${e.rest}" selected>${restLabel(+e.rest)}</option>`}</select></div></div>
+      <div class="target">${e.sets.length}세트${e.target?` × ${esc(e.target)}회`:''}${F?'':` · 휴식 <select class="restsel" data-in="rest" data-ei="${ei}">${REST_OPTS.map(v=>`<option value="${v}" ${(+e.rest||90)===v?'selected':''}>${restLabel(v)}</option>`).join('')}${REST_OPTS.includes(+e.rest)?'':`<option value="${e.rest}" selected>${restLabel(+e.rest)}</option>`}</select>`}</div></div>
       <button class="x ${armed?'armed':''}" data-act="delex" data-ei="${ei}">${armed?'삭제?':'×'}</button></div>
     <div class="prev">${prevTxt}</div>
-    <div class="shead"><span>#</span><span>무게</span><span>횟수</span><span></span></div>
+    ${F?`<div class="shead c3"><span>#</span>${F.map(f=>`<span>${f[1]}</span>`).join('')}<span></span></div>`:`<div class="shead"><span>#</span><span>무게</span><span>횟수</span><span></span></div>`}
     <div class="sets">${e.sets.map((s,si)=>{
       const p = prev && (prev.sets[si]||prev.sets[prev.sets.length-1]);
+      if(F) return `<div class="srow c3 ${s.done?'done':''}"><div class="n">${si+1}</div>${F.map(([k,lab,im,u])=>`<div class="unit" data-u="${u||''}"><input inputmode="${im}" value="${esc(s[k]||'')}" placeholder="${p&&p[k]?esc(p[k]):''}" data-in="cf" data-f="${k}" data-ei="${ei}" data-si="${si}"></div>`).join('')}<button class="chk" data-act="done" data-ei="${ei}" data-si="${si}">✓</button></div>`;
       return `<div class="srow ${s.done?'done':''}">
         <div class="n">${si+1}</div>
         <div class="unit" data-u="kg"><input inputmode="decimal" value="${esc(s.w)}" placeholder="${p?esc(p.w):''}" data-in="w" data-ei="${ei}" data-si="${si}"></div>
@@ -462,7 +470,7 @@ function renderHistory(){
   if (!month.length) h+=`<div class="empty-note">아직 기록이 없어요</div>`;
   month.forEach(l=>{ const d=parse(l.date);
     h+=`<div class="hist-item" data-act="calsel" data-d="${l.date}" data-top="1"><div class="dd">${d.getMonth()+1}/${d.getDate()} ${DOW[d.getDay()]}</div>
-      <div class="tt"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><small>${doneSets(l)}세트 · ${Math.round(volume(l)).toLocaleString()}kg${l.startedAt?` · ${durText(l)}`:''}${l.memo?` · ${esc(l.memo.slice(0,24))}${l.memo.length>24?'…':''}`:''}</small></div><span class="muted">›</span></div>`; });
+      <div class="tt"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><small>${doneSets(l)}세트${volume(l)?` · ${Math.round(volume(l)).toLocaleString()}kg`:''}${l.startedAt?` · ${durText(l)}`:''}${l.memo?` · ${esc(l.memo.slice(0,24))}${l.memo.length>24?'…':''}`:''}</small></div><span class="muted">›</span></div>`; });
   h += `</div>`;
   $('#view').innerHTML = h;
 }
@@ -477,8 +485,8 @@ function dayDetail(ds, l){
     h+=`<div class="empty-note">${pending?'운동 완료를 누르지 않아 저장되지 않은 운동이 있어요':'이 날은 운동 기록이 없어요'}</div>`;
   } else {
     if(pending) h+=`<div class="muted" style="margin-bottom:6px">운동 완료 전이라 운동 기록은 아직 저장되지 않았어요</div>`;
-    if(exs.length) h+=`<div class="dhead"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><span class="muted">${doneSets(l)}세트 · ${Math.round(volume(l)).toLocaleString()}kg${l.startedAt?` · ${durText(l)}`:''}</span></div>`;
-    exs.forEach(e=>{ h+=`<div class="dline"><b>${esc(e.name)}</b><span>${e.sets.filter(s=>s.done).map(s=>num(s.w)?`${s.w}×${s.r}`:`${s.r}회`).join('  ')}</span>${(e.memo||'').trim()?`<small>${esc(e.memo.trim())}</small>`:''}</div>`; });
+    if(exs.length) h+=`<div class="dhead"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><span class="muted">${doneSets(l)}세트${volume(l)?` · ${Math.round(volume(l)).toLocaleString()}kg`:''}${l.startedAt?` · ${durText(l)}`:''}</span></div>`;
+    exs.forEach(e=>{ h+=`<div class="dline"><b>${esc(e.name)}</b><span>${e.sets.filter(s=>s.done).map(s=>fmtSet(e,s)).join('  ')}</span>${(e.memo||'').trim()?`<small>${esc(e.memo.trim())}</small>`:''}</div>`; });
     if(push.length||l.daily.pullup) h+=`<div class="dline"><b>매일 루틴</b><span>${push.length?`푸시업 ${push.join(' / ')}`:''}${push.length&&l.daily.pullup?' · ':''}${l.daily.pullup?'풀업 루틴 ✓':''}</span></div>`;
     if(num(runOf(l).km)) h+=`<div class="dline"><b>러닝</b><span>${esc(runSummary(runOf(l)).replace('러닝 ',''))}</span></div>`;
   }
@@ -550,7 +558,7 @@ function claudeText(days){
   logs.forEach(l=>{ const d=parse(l.date);
     t += `\n${l.date}(${DOW[d.getDay()]}) ${titleOf(l)}${l.finishedAt?` · 운동 시간 ${durText(l)}`:''}\n`;
     (saved(l)?l.exercises:[]).filter(e=>e.sets.some(s=>s.done)).forEach(e=>{
-      t += `- ${e.name}[${PARTS[e.part]||''}]: ${e.sets.filter(s=>s.done).map(s=>`${s.w||0}x${s.r}${s.rir?`(여유${s.rir})`:''}`).join(', ')}${(e.memo||'').trim()?` / 메모: ${e.memo.trim()}`:''}\n`; });
+      t += `- ${e.name}[${PARTS[e.part]||''}]: ${e.sets.filter(s=>s.done).map(s=>fieldsOf(e)?fmtSet(e,s):`${s.w||0}x${s.r}`).join(', ')}${(e.memo||'').trim()?` / 메모: ${e.memo.trim()}`:''}\n`; });
     const p=l.daily.push.filter(v=>v!==''); if(p.length) t+=`- 푸시업: ${p.join('/')}\n`;
     if(l.daily.pullup) t+=`- 밤 풀업 루틴 완료\n`;
     if(num(runOf(l).km)) t+=`- ${runSummary(runOf(l))}\n`;
@@ -768,6 +776,12 @@ $('#view').addEventListener('click',ev=>{
   if(a==='done'){
     const l=ensureLog(S.date), e=l.exercises[ei], s=e.sets[si];
     const row=t.closest('.srow'), wi=row.querySelector('[data-in=w]'), ri=row.querySelector('[data-in=r]');
+    if(fieldsOf(e)){
+      if(!s.done){ row.querySelectorAll('[data-in=cf]').forEach(inp=>{ const k=inp.dataset.f; if(!s[k] && inp.placeholder) s[k]=inp.placeholder; });
+        if(!s.min){ const mi=row.querySelector('[data-f=min]'); mi.focus(); mi.style.borderColor='var(--bad)'; return; }
+        s.done=true; if(!l.startedAt) l.startedAt=Date.now(); }
+      else s.done=false;
+      touch(S.date); render(); return; }
     if(!s.done){
       if(s.w==='' && wi.placeholder) s.w=wi.placeholder;
       if(s.r==='' && ri.placeholder) s.r=ri.placeholder;
@@ -778,7 +792,7 @@ $('#view').addEventListener('click',ev=>{
     } else { s.done=false; touch(S.date); render(); }
     return;
   }
-  if(a==='addset'){ const l=ensureLog(S.date); l.exercises[ei].sets.push({w:'',r:'',rir:'',done:false}); touch(S.date); render(); return; }
+  if(a==='addset'){ const l=ensureLog(S.date); l.exercises[ei].sets.push(blankSet(l.exercises[ei])); touch(S.date); render(); return; }
   if(a==='rmset'){ const l=ensureLog(S.date); l.exercises[ei].sets.pop(); touch(S.date); render(); return; }
   if(a==='delex'){
     const l=ensureLog(S.date), e=l.exercises[ei];
@@ -790,7 +804,7 @@ $('#view').addEventListener('click',ev=>{
     const all=a==='resetall';
     ask(all?'운동을 초기화할까요?':'세트를 초기화할까요?', all?'오늘 불러온 운동과 기록이 모두 지워지고\n빈 화면으로 돌아가요.':'운동 목록은 그대로 두고\n입력한 무게·횟수·체크·메모만 지워요.', true).then(ok=>{
       if(!ok) return; const l=ensureLog(S.date);
-      if(all) l.exercises=[]; else l.exercises.forEach(e=>{ e.sets=e.sets.map(()=>({w:'',r:'',rir:'',done:false})); e.memo=''; });
+      if(all) l.exercises=[]; else l.exercises.forEach(e=>{ e.sets=e.sets.map(()=>blankSet(e)); e.memo=''; });
       delete l.startedAt; delete l.finishedAt; clearInterval(T.iv); $('#timer').style.display='none';
       touch(S.date); render(); toastMsg(all?'운동을 초기화했어요':'세트 기록을 지웠어요'); });
     return; }
@@ -836,7 +850,8 @@ $('#view').addEventListener('input',ev=>{
   const t=ev.target, k=t.dataset.in; if(!k) return;
   if(k==='progEx'){ S.progEx=t.value; render(); return; }
   const l=ensureLog(S.date);
-  if(k==='w'||k==='r'){ const s=l.exercises[+t.dataset.ei].sets[+t.dataset.si]; s[k]=t.value.replace(/[^0-9.]/g,''); t.style.borderColor=''; }
+  if(k==='cf'){ const s=l.exercises[+t.dataset.ei].sets[+t.dataset.si]; s[t.dataset.f]=t.value.replace(/[^0-9.]/g,''); t.style.borderColor=''; }
+  else if(k==='w'||k==='r'){ const s=l.exercises[+t.dataset.ei].sets[+t.dataset.si]; s[k]=t.value.replace(/[^0-9.]/g,''); t.style.borderColor=''; }
   else if(k==='rir'){ l.exercises[+t.dataset.ei].sets[+t.dataset.si].rir=t.value; }
   else if(k==='run'){ const dft=draftDaily(S.date); const r=dft.run; const f=t.dataset.f;
     r[f]= f==='km'? t.value.replace(/[^0-9.]/g,'') : t.value.replace(/[^0-9]/g,'');
