@@ -128,6 +128,11 @@
   .ai:empty{display:none}
   .muted{color:var(--dim);font-size:12.5px}
   .hidden{display:none!important}
+  .runrow{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px}
+  .runrow .unit{position:relative} .runrow .unit:after{content:attr(data-u);position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);pointer-events:none}
+  .runrow input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 26px 9px 10px;text-align:center;font-family:"JetBrains Mono",monospace;outline:none}
+  .runrow input:focus{border-color:var(--acc)}
+  .pace{margin-top:8px;font-size:13px;color:var(--sub)} .pace b{color:var(--acc2);font-family:"JetBrains Mono",monospace;font-size:15px}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:center;justify-content:center;padding:24px}
   .mbox{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 18px 16px;width:100%;max-width:340px;text-align:center}
   .mbox b{font-size:17px;display:block} .mbox p{color:var(--sub);font-size:14px;line-height:1.6;margin:8px 0 14px;white-space:pre-line}
@@ -283,6 +288,11 @@ function ask(title, text, danger){
     y.onclick=()=>done(true); n.onclick=()=>done(false); m.onclick=e=>{ if(e.target===m) done(false); };
   });
 }
+function runOf(l){ return (l&&l.daily&&l.daily.run)||{km:'',min:'',sec:''}; }
+function runSecs(r){ return (num(r.min)||0)*60+(num(r.sec)||0); }
+function paceText(r){ const km=num(r.km), t=runSecs(r); if(!km||!t) return ''; const p=Math.round(t/km); return `${Math.floor(p/60)}'${String(p%60).padStart(2,'0')}"/km`; }
+function speedText(r){ const km=num(r.km), t=runSecs(r); if(!km||!t) return ''; return `${(km/(t/3600)).toFixed(1)}km/h`; }
+function runSummary(r){ const km=num(r.km); if(!km) return ''; const t=runSecs(r); return `러닝 ${km}km${t?` · ${Math.floor(t/60)}분${t%60?` ${t%60}초`:''} · ${paceText(r)}`:''}`; }
 function clock(t){ if(!t) return '--:--'; const d=new Date(t); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; }
 function durMs(l){ if(!l.startedAt) return 0; return (l.finishedAt||Date.now())-l.startedAt; }
 function hms(ms){ const t=Math.max(0,Math.floor(ms/1000)), h=Math.floor(t/3600), m=Math.floor(t%3600/60), x=t%60; return h? `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}` : `${m}:${String(x).padStart(2,'0')}`; }
@@ -313,7 +323,7 @@ function allLogs(){
 }
 function hasContent(l){
   if(!l) return false;
-  return l.exercises.length>0 || false || l.daily.push.some(v=>v!=='') || l.daily.pullup || (l.memo||'').trim()!=='';
+  return l.exercises.length>0 || false || l.daily.push.some(v=>v!=='') || l.daily.pullup || !!num(runOf(l).km) || (l.memo||'').trim()!=='';
 }
 function doneSets(l){ return l.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0); }
 function volume(l){ return l.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+(num(s.w)||0)*(num(s.r)||0),0),0); }
@@ -352,7 +362,7 @@ function renderToday(){
   const isToday = date===todayStr();
   let h = `<div class="datebar">
     <button class="icon" data-act="day" data-n="-1">‹</button>
-    <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})<small>${isToday?'오늘':`<span data-act="goto-today" style="color:var(--acc);cursor:pointer">오늘로 이동</span>`}</small></div>
+    <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div>
     <button class="icon" data-act="day" data-n="1">›</button></div>
 ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 총 운동시간</span><b class="big">${durLong(l)}</b><span>${clock(l.startedAt)} ~ ${clock(l.finishedAt)} · ${doneSets(l)}세트 · ${Math.round(volume(l)).toLocaleString()}kg</span></div>`:''}`;
   if (!l.exercises.length){
@@ -374,6 +384,11 @@ ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 �
     <div class="muted" style="margin-bottom:8px">아침 푸시업 (정자세 최대 개수)</div>
     <div class="daily">${[0,1,2].map(i=>`<input inputmode="numeric" placeholder="${i+1}세트" value="${esc(l.daily.push[i])}" data-in="push" data-i="${i}">`).join('')}</div>
     <div class="toggle"><span>밤 풀업 루틴 ${l.exercises.some(e=>e.part==='back')?'<span class="muted">· 등 하는 날은 쉬기</span>':''}</span><div class="sw ${l.daily.pullup?'on':''}" data-act="pullup"></div></div>
+    <div class="muted" style="margin:14px 0 8px">러닝</div>
+    <div class="runrow"><div class="unit" data-u="km"><input inputmode="decimal" placeholder="거리" value="${esc(runOf(l).km)}" data-in="run" data-f="km"></div>
+      <div class="unit" data-u="분"><input inputmode="numeric" placeholder="시간" value="${esc(runOf(l).min)}" data-in="run" data-f="min"></div>
+      <div class="unit" data-u="초"><input inputmode="numeric" placeholder="0" value="${esc(runOf(l).sec)}" data-in="run" data-f="sec"></div></div>
+    <div class="pace" id="pace">${paceText(runOf(l))?`페이스 <b>${paceText(runOf(l))}</b> · ${speedText(runOf(l))}`:'거리와 시간을 넣으면 km당 페이스가 나와요'}</div>
   </div>`;
   $('#view').innerHTML = h;
 }
@@ -448,12 +463,13 @@ function dayDetail(ds, l){
   let h=`<div class="sec-title">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div><div class="card day">`;
   const exs = l ? l.exercises.filter(e=>e.sets.some(s=>s.done)) : [];
   const push = l ? l.daily.push.filter(v=>v!=='') : [];
-  if(!exs.length && !push.length && !(l&&l.daily.pullup)){
+  if(!exs.length && !push.length && !(l&&l.daily.pullup) && !(l&&num(runOf(l).km))){
     h+=`<div class="empty-note">이 날은 운동 기록이 없어요</div>`;
   } else {
     if(exs.length) h+=`<div class="dhead"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><span class="muted">${doneSets(l)}세트 · ${Math.round(volume(l)).toLocaleString()}kg${l.startedAt?` · ${durText(l)}`:''}</span></div>`;
     exs.forEach(e=>{ h+=`<div class="dline"><b>${esc(e.name)}</b><span>${e.sets.filter(s=>s.done).map(s=>num(s.w)?`${s.w}×${s.r}`:`${s.r}회`).join('  ')}</span>${(e.memo||'').trim()?`<small>${esc(e.memo.trim())}</small>`:''}</div>`; });
     if(push.length||l.daily.pullup) h+=`<div class="dline"><b>매일 루틴</b><span>${push.length?`푸시업 ${push.join(' / ')}`:''}${push.length&&l.daily.pullup?' · ':''}${l.daily.pullup?'풀업 루틴 ✓':''}</span></div>`;
+    if(num(runOf(l).km)) h+=`<div class="dline"><b>러닝</b><span>${esc(runSummary(runOf(l)).replace('러닝 ',''))}</span></div>`;
   }
   h+=`<button class="ghost" style="width:100%;margin-top:10px" data-act="open" data-d="${ds}">${l&&l.exercises.length?'이 날 기록 열기 / 수정':'이 날 운동 기록하기'}</button></div>`;
   return h;
@@ -465,10 +481,10 @@ function renderStats(){
   const we = addDays(ws,6);
   const logs = allLogs().filter(l=>l.date>=ws && l.date<=we);
   const sets={}, days={}; STAT_PARTS.forEach(p=>{sets[p]=0;days[p]=new Set();});
-  let push=0, pull=0;
+  let push=0, pull=0, runKm=0;
   logs.forEach(l=>{
     l.exercises.forEach(e=>{ const n=e.sets.filter(s=>s.done).length; if(n && sets[e.part]!==undefined){ sets[e.part]+=n; days[e.part].add(l.date);} });
-    push += l.daily.push.reduce((a,v)=>a+(num(v)||0),0); if(l.daily.pullup) pull++;
+    push += l.daily.push.reduce((a,v)=>a+(num(v)||0),0); if(l.daily.pullup) pull++; runKm += num(runOf(l).km)||0;
   });
   const a=parse(ws), b=parse(we);
   let h = `<div class="datebar"><button class="icon" data-act="wk" data-n="-7">‹</button><div class="d">${a.getMonth()+1}/${a.getDate()} – ${b.getMonth()+1}/${b.getDate()}<small>${ws===weekStart(todayStr())?'이번 주':'주간'}</small></div><button class="icon" data-act="wk" data-n="7">›</button></div>
@@ -481,7 +497,7 @@ function renderStats(){
       <div class="gauge"><div class="band" style="left:${10/MAX*100}%;width:${10/MAX*100}%"></div><div class="fill" style="width:calc(${Math.min(n,MAX)/MAX*100}% - 4px);background:${col}"></div></div></div>`;
   });
   h+=`<div class="legend">초록 띠가 주당 10~20세트 구간이에요. 푸시업·풀업 루틴은 세트 수에 넣지 않았어요.</div></div>
-  <div class="card summary"><div><b>${logs.filter(l=>doneSets(l)).length}</b><span>운동한 날</span></div><div><b>${push}</b><span>푸시업 합계</span></div><div><b>${pull}</b><span>풀업 루틴</span></div></div>`;
+  <div class="card summary"><div><b>${logs.filter(l=>doneSets(l)).length}</b><span>운동한 날</span></div><div><b>${push}</b><span>푸시업 합계</span></div><div><b>${pull}</b><span>풀업 루틴</span></div><div><b>${Math.round(runKm*10)/10}</b><span>러닝 km</span></div></div>`;
 
   const names = [...new Set(allLogs().flatMap(l=>l.exercises.filter(e=>e.sets.some(s=>s.done)).map(e=>e.name)))];
   if (!S.progEx || !names.includes(S.progEx)) S.progEx = names[0]||null;
@@ -526,6 +542,7 @@ function claudeText(days){
       t += `- ${e.name}[${PARTS[e.part]||''}]: ${e.sets.filter(s=>s.done).map(s=>`${s.w||0}x${s.r}${s.rir?`(여유${s.rir})`:''}`).join(', ')}${(e.memo||'').trim()?` / 메모: ${e.memo.trim()}`:''}\n`; });
     const p=l.daily.push.filter(v=>v!==''); if(p.length) t+=`- 푸시업: ${p.join('/')}\n`;
     if(l.daily.pullup) t+=`- 밤 풀업 루틴 완료\n`;
+    if(num(runOf(l).km)) t+=`- ${runSummary(runOf(l))}\n`;
     if((l.memo||'').trim()) t+=`- 메모: ${l.memo.trim()}\n`;
   });
   return t;
@@ -809,6 +826,10 @@ $('#view').addEventListener('input',ev=>{
   const l=ensureLog(S.date);
   if(k==='w'||k==='r'){ const s=l.exercises[+t.dataset.ei].sets[+t.dataset.si]; s[k]=t.value.replace(/[^0-9.]/g,''); t.style.borderColor=''; }
   else if(k==='rir'){ l.exercises[+t.dataset.ei].sets[+t.dataset.si].rir=t.value; }
+  else if(k==='run'){ const r=l.daily.run=l.daily.run||{km:'',min:'',sec:''}; const f=t.dataset.f;
+    r[f]= f==='km'? t.value.replace(/[^0-9.]/g,'') : t.value.replace(/[^0-9]/g,'');
+    if(f==='sec' && +r.sec>59){ r.sec='59'; t.value='59'; }
+    const pe=$('#pace'); if(pe) pe.innerHTML = paceText(r)?`페이스 <b>${paceText(r)}</b> · ${speedText(r)}`:'거리와 시간을 넣으면 km당 페이스가 나와요'; }
   else if(k==='push'){ l.daily.push[+t.dataset.i]=t.value.replace(/[^0-9]/g,''); }
   else if(k==='rest'){ const e=l.exercises[+t.dataset.ei]; e.rest=+t.value; saveMy({rest:{...restPrefs(),[e.name]:+t.value}}); toastMsg(`${e.name} 휴식 ${restLabel(+t.value)}로 저장했어요`); }
   else if(k==='exmemo'){ l.exercises[+t.dataset.ei].memo=t.value; }
