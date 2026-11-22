@@ -395,14 +395,14 @@ ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 �
   }
   const dv=dailyOf(l,date), dr=dv.run||{km:'',min:'',sec:''}, dirty=!!S.dd[date];
   h += `<div class="sec-title">매일 루틴</div><div class="card">
-    <div class="lbl">푸쉬업</div>
-    <div class="daily">${[0,1,2].map(i=>`<input inputmode="numeric" placeholder="${i+1}세트" value="${esc(dv.push[i])}" data-in="push" data-i="${i}">`).join('')}</div>
-    <div class="toggle"><span class="lbl" style="margin:0">풀업</span><div class="sw ${dv.pullup?'on':''}" data-act="pullup"></div></div>
-    <div class="lbl" style="margin-top:14px">러닝</div>
+    <div class="lbl">러닝</div>
     <div class="runrow"><div class="unit" data-u="km"><input inputmode="decimal" placeholder="거리" value="${esc(dr.km)}" data-in="run" data-f="km"></div>
       <div class="unit" data-u="분"><input inputmode="numeric" placeholder="시간" value="${esc(dr.min)}" data-in="run" data-f="min"></div>
       <div class="unit" data-u="초"><input inputmode="numeric" placeholder="0" value="${esc(dr.sec)}" data-in="run" data-f="sec"></div></div>
     <div class="pace" id="pace">${paceText(dr)?`페이스 <b>${paceText(dr)}</b> · ${speedText(dr)}`:'거리와 시간을 넣으면 km당 페이스가 나와요'}</div>
+    <div class="lbl" style="margin-top:16px">푸쉬업</div>
+    <div class="daily">${[0,1,2].map(i=>`<input inputmode="numeric" placeholder="${i+1}세트" value="${esc(dv.push[i])}" data-in="push" data-i="${i}">`).join('')}</div>
+    <div class="toggle"><span class="lbl" style="margin:0">풀업</span><div class="sw ${dv.pullup?'on':''}" data-act="pullup"></div></div>
     <button class="btn ${dirty?'':'outline'}" id="saveDaily" style="width:100%;padding:12px;margin-top:14px" data-act="savedaily">저장</button>
   </div>`;
   $('#view').innerHTML = h;
@@ -487,8 +487,8 @@ function dayDetail(ds, l){
     if(pending) h+=`<div class="muted" style="margin-bottom:6px">운동 완료 전이라 운동 기록은 아직 저장되지 않았어요</div>`;
     if(exs.length) h+=`<div class="dhead"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><span class="muted">${doneSets(l)}세트${volume(l)?` · ${Math.round(volume(l)).toLocaleString()}kg`:''}${l.startedAt?` · ${durText(l)}`:''}</span></div>`;
     exs.forEach(e=>{ h+=`<div class="dline"><b>${esc(e.name)}</b><span>${e.sets.filter(s=>s.done).map(s=>fmtSet(e,s)).join('  ')}</span>${(e.memo||'').trim()?`<small>${esc(e.memo.trim())}</small>`:''}</div>`; });
-    if(push.length||l.daily.pullup) h+=`<div class="dline"><b>매일 루틴</b><span>${push.length?`푸시업 ${push.join(' / ')}`:''}${push.length&&l.daily.pullup?' · ':''}${l.daily.pullup?'풀업 루틴 ✓':''}</span></div>`;
     if(num(runOf(l).km)) h+=`<div class="dline"><b>러닝</b><span>${esc(runSummary(runOf(l)).replace('러닝 ',''))}</span></div>`;
+    if(push.length||l.daily.pullup) h+=`<div class="dline"><b>매일 루틴</b><span>${push.length?`푸쉬업 ${push.join(' / ')}`:''}${push.length&&l.daily.pullup?' · ':''}${l.daily.pullup?'풀업 루틴 ✓':''}</span></div>`;
   }
   h+=`<button class="ghost" style="width:100%;margin-top:10px" data-act="open" data-d="${ds}">${l&&l.exercises.length?'이 날 기록 열기 / 수정':'이 날 운동 기록하기'}</button></div>`;
   return h;
