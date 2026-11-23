@@ -138,7 +138,7 @@
   .pugrid input,.purow input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center;font-family:"JetBrains Mono",monospace;outline:none;font-size:14px}
   .pugrid input:focus,.purow input:focus{border-color:var(--acc)}
   .pugrid .unit{position:relative} .pugrid .unit input{padding-right:30px} .pugrid .unit:after{content:attr(data-u);position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);pointer-events:none}
-  .purow{display:grid;grid-template-columns:52px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px} .purow span{font-size:13px;color:var(--sub)}
+  .purow{display:grid;grid-template-columns:52px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px} .purow span{font-size:13px;color:var(--sub);white-space:nowrap}
   .lbl{font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px} .lbl .muted{font-weight:400;font-size:12.5px}
   .btn.outline{background:transparent;border:1.5px solid var(--line);color:var(--sub)}
   .savenote{font-size:12.5px;color:var(--dim);text-align:center;margin:-4px 0 10px}
@@ -312,7 +312,7 @@ function puType(date, pu){ const w=parse(date).getDay(); if(w===5) return (pu&&p
 function puTotal(date, pu){ pu=puObj(pu); const t=puType(date,pu); const S2=(pu.s||[]).map(v=>num(v)||0);
   if(t==='mon'||t==='wed') return S2.reduce((a,b)=>a+b,0);
   if(t==='tue'){ const tt=num(pu.total); if(tt) return tt; const pk=num(pu.peak); return pk? pk*pk : 0; }
-  if(t==='thu') return (num(pu.rep)||0)*(num(pu.cnt)||0);
+  if(t==='thu'){ const sm=S2.reduce((a,b)=>a+b,0); return sm || (num(pu.rep)||0)*(num(pu.cnt)||0); }
   return 0; }
 function puSummary(date, pu){ pu=puObj(pu); const t=puType(date,pu); const tot=puTotal(date,pu); if(!t||!tot) return '';
   const S2=(pu.s||[]).filter(v=>v!=='');
@@ -321,7 +321,7 @@ function puSummary(date, pu){ pu=puObj(pu); const t=puType(date,pu); const tot=p
   if(t==='mon') d=S2.join('/');
   else if(t==='wed') d=['풀업','친업','와이드'].map((n,i)=>`${n} ${(pu.s||[]).slice(i*3,i*3+3).filter(v=>v!=='').join('/')}`).filter(x=>/\d/.test(x)).join(' · ');
   else if(t==='tue') d=`최대 ${pu.peak||'-'}회`;
-  else if(t==='thu') d=`${pu.rep||'-'}회 × ${pu.cnt||'-'}세트`;
+  else if(t==='thu') d= S2.length ? `${S2.length}세트 · ${S2.join('/')}` : `${pu.rep||'-'}회 × ${pu.cnt||'-'}세트`;
   return `${head} · ${d} · 총 ${tot}회`; }
 function weekMonLog(date){ const mon=addDays(weekStart(date),1); return getLog(mon)||S.logs[mon]; }
 function wedTarget(date){ const ml=weekMonLog(date); const f=ml&&puObj(ml.daily&&ml.daily.pullup).s; const first=f&&num(f[0]); return first? Math.max(1,Math.ceil(first/2)) : null; }
@@ -344,15 +344,14 @@ function puCard(date, pu){
       <div class="unit" data-u="총"><input inputmode="numeric" placeholder="총 횟수" value="${esc(pu.total||'')}" data-in="pu" data-f="total"></div></div>`;
   } else if(t==='thu'){
     const tg=thuTarget(date);
-    h+=`<div class="muted" style="font-size:12.5px;margin:2px 0 6px">수요일 세트당 횟수로, 풀업만으로 못 할 때까지</div>
-      <div class="pugrid g2"><div class="unit" data-u="회"><input inputmode="numeric" placeholder="${tg?tg:'세트당'}" value="${esc(pu.rep||'')}" data-in="pu" data-f="rep"></div>
-      <div class="unit" data-u="세트"><input inputmode="numeric" placeholder="세트 수" value="${esc(pu.cnt||'')}" data-in="pu" data-f="cnt"></div></div>`;
+    h+=`<div class="muted" style="font-size:12.5px;margin:2px 0 6px">${tg?`목표: 세트당 ${tg}회 (수요일 횟수)`:'수요일 세트당 횟수로'}, 풀업만으로 못 할 때까지</div>`;
+    ['1~3','4~6','7~9'].forEach((n,r)=>{ h+=`<div class="purow"><span>${n}</span>${[0,1,2].map(c=>`<input inputmode="numeric" placeholder="${tg||''}" value="${sv(r*3+c)}" data-in="pu" data-f="s" data-i="${r*3+c}">`).join('')}</div>`; });
   }
   h+=`<div class="pace" id="puTotal">${puFoot(date,pu)}</div>`;
   return h;
 }
 function puFoot(date,pu){ const t=puType(date,pu), tot=puTotal(date,pu); let x=tot?`총 <b>${tot}회</b>`:'세트별 횟수를 넣으면 총 횟수가 나와요';
-  if(t==='thu' && (num(puObj(pu).cnt)||0)>=9) x+=` · <span style="color:var(--ok)">9세트 달성! 다음 주 수요일 세트당 +1</span>`;
+  if(t==='thu' && (((puObj(pu).s||[]).filter(v=>num(v)).length)>=9 || (num(puObj(pu).cnt)||0)>=9)) x+=` · <span style="color:var(--ok)">9세트 달성! 다음 주 수요일 세트당 +1</span>`;
   if(t==='tue' && !num(puObj(pu).total) && num(puObj(pu).peak)) x+=` <span class="muted">(최대 ${puObj(pu).peak}회 기준 자동 계산)</span>`;
   return x; }
 function runOf(l){ return (l&&l.daily&&l.daily.run)||{km:'',min:'',sec:''}; }
