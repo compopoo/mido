@@ -132,6 +132,13 @@
   .ai:empty{display:none}
   .muted{color:var(--dim);font-size:12.5px}
   .hidden{display:none!important}
+  .puhead{display:flex;align-items:center;gap:8px;margin:16px 0 8px} .puhead .muted{flex:1;font-size:12.5px}
+  .restbtn{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--acc2);font-size:12px;padding:5px 8px;cursor:pointer;font-family:"JetBrains Mono",monospace}
+  .pugrid{display:grid;gap:6px} .pugrid.g5{grid-template-columns:repeat(5,1fr)} .pugrid.g2{grid-template-columns:1fr 1fr}
+  .pugrid input,.purow input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center;font-family:"JetBrains Mono",monospace;outline:none;font-size:14px}
+  .pugrid input:focus,.purow input:focus{border-color:var(--acc)}
+  .pugrid .unit{position:relative} .pugrid .unit input{padding-right:30px} .pugrid .unit:after{content:attr(data-u);position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);pointer-events:none}
+  .purow{display:grid;grid-template-columns:52px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px} .purow span{font-size:13px;color:var(--sub)}
   .lbl{font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px} .lbl .muted{font-weight:400;font-size:12.5px}
   .btn.outline{background:transparent;border:1.5px solid var(--line);color:var(--sub)}
   .savenote{font-size:12.5px;color:var(--dim);text-align:center;margin:-4px 0 10px}
@@ -277,7 +284,7 @@ const S = { dd:{}, my:null, picker:null, editor:null, exFilter:'all', tab:'today
 let saveTimers={}, saving={}, pending={};
 
 function newLog(date){
-  return { date, tpl:'FREE', title:'오늘의 운동', group:'free', exercises:[], daily:{push:['','',''],pullup:false}, memo:'', updatedAt:0 };
+  return { date, tpl:'FREE', title:'오늘의 운동', group:'free', exercises:[], daily:{push:['','',''],pullup:{}}, memo:'', updatedAt:0 };
 }
 function partsOf(l){ const seen=[]; l.exercises.forEach(e=>{ if(!seen.includes(e.part)) seen.push(e.part); }); return seen; }
 function titleOf(l){ const ps=partsOf(l).filter(p=>!['warmup','cardio'].includes(p)); return ps.length? ps.map(p=>PARTS[p]||p).join(' · ') : (l.exercises.length? partsOf(l).map(p=>PARTS[p]).join(' · ') : (l.title||'기록')); }
@@ -294,10 +301,60 @@ function ask(title, text, danger){
     y.onclick=()=>done(true); n.onclick=()=>done(false); m.onclick=e=>{ if(e.target===m) done(false); };
   });
 }
-function draftDaily(date){ if(!S.dd[date]){ const l=getLog(date); const b=(l&&l.daily)||{}; S.dd[date]={push:(b.push||['','','']).slice(),pullup:!!b.pullup,run:{km:'',min:'',sec:'',...(b.run||{})}}; } return S.dd[date]; }
+function draftDaily(date){ if(!S.dd[date]){ const l=getLog(date); const b=(l&&l.daily)||{}; S.dd[date]={push:(b.push||['','','']).slice(),pullup:JSON.parse(JSON.stringify(puObj(b.pullup))),run:{km:'',min:'',sec:'',...(b.run||{})}}; } return S.dd[date]; }
 function markDaily(){ const b=document.getElementById('saveDaily'); if(b){ b.className='btn'; } }
 function saved(l){ return !!(l && l.finishedAt && doneSets(l)>0); }
-function dailyOf(l,date){ return S.dd[date] || (l&&l.daily) || {push:['','',''],pullup:false,run:{km:'',min:'',sec:''}}; }
+function dailyOf(l,date){ return S.dd[date] || (l&&l.daily) || {push:['','',''],pullup:{},run:{km:'',min:'',sec:''}}; }
+const PU_DAYS={1:'mon',2:'tue',3:'wed',4:'thu'};
+const PU_INFO={mon:{name:'월',title:'MAX 5세트',rest:90},tue:{name:'화',title:'피라미드',rest:10},wed:{name:'수',title:'풀업·친업·와이드 3세트씩',rest:60},thu:{name:'목',title:'풀업 최대 반복',rest:60}};
+function puObj(v){ return (v && typeof v==='object') ? v : {}; }
+function puType(date, pu){ const w=parse(date).getDay(); if(w===5) return (pu&&pu.fri)||'mon'; return PU_DAYS[w]||null; }
+function puTotal(date, pu){ pu=puObj(pu); const t=puType(date,pu); const S2=(pu.s||[]).map(v=>num(v)||0);
+  if(t==='mon'||t==='wed') return S2.reduce((a,b)=>a+b,0);
+  if(t==='tue'){ const tt=num(pu.total); if(tt) return tt; const pk=num(pu.peak); return pk? pk*pk : 0; }
+  if(t==='thu') return (num(pu.rep)||0)*(num(pu.cnt)||0);
+  return 0; }
+function puSummary(date, pu){ pu=puObj(pu); const t=puType(date,pu); const tot=puTotal(date,pu); if(!t||!tot) return '';
+  const S2=(pu.s||[]).filter(v=>v!=='');
+  const head = (parse(date).getDay()===5? `금(${PU_INFO[t].name}요일 반복) ` : '') + PU_INFO[t].title;
+  let d='';
+  if(t==='mon') d=S2.join('/');
+  else if(t==='wed') d=['풀업','친업','와이드'].map((n,i)=>`${n} ${(pu.s||[]).slice(i*3,i*3+3).filter(v=>v!=='').join('/')}`).filter(x=>/\d/.test(x)).join(' · ');
+  else if(t==='tue') d=`최대 ${pu.peak||'-'}회`;
+  else if(t==='thu') d=`${pu.rep||'-'}회 × ${pu.cnt||'-'}세트`;
+  return `${head} · ${d} · 총 ${tot}회`; }
+function weekMonLog(date){ const mon=addDays(weekStart(date),1); return getLog(mon)||S.logs[mon]; }
+function wedTarget(date){ const ml=weekMonLog(date); const f=ml&&puObj(ml.daily&&ml.daily.pullup).s; const first=f&&num(f[0]); return first? Math.max(1,Math.ceil(first/2)) : null; }
+function thuTarget(date){ const wd=addDays(weekStart(date),3); const wl=getLog(wd)||S.logs[wd]; const s2=wl&&puObj(wl.daily&&wl.daily.pullup).s; const v=s2&&num(s2[0]); return v||wedTarget(date); }
+function puCard(date, pu){
+  pu=puObj(pu); const w=parse(date).getDay(); const t=puType(date,pu);
+  if(!t) return `<div class="lbl" style="margin-top:16px">풀업</div><div class="muted">${DOW[w]}요일은 풀업 휴식일이에요</div>`;
+  const I=PU_INFO[t], sv=i=>esc((pu.s||[])[i]||'');
+  let h=`<div class="puhead"><span class="lbl" style="margin:0">풀업</span><span class="muted">${w===5?'금요일 · ':''}${I.name}요일 ${I.title}</span><button class="restbtn" data-act="putimer" data-s="${I.rest}">⏱ ${I.rest}초</button></div>`;
+  if(w===5) h+=`<div class="chips" style="margin:6px 0 8px"><span class="muted" style="align-self:center;font-size:12px">가장 힘들었던 요일</span>${['mon','tue','wed','thu'].map(k=>`<button class="chip ${t===k?'on':''}" data-act="pufri" data-v="${k}">${PU_INFO[k].name}</button>`).join('')}</div>`;
+  if(t==='mon'){
+    h+=`<div class="pugrid g5">${[0,1,2,3,4].map(i=>`<input inputmode="numeric" placeholder="${i+1}세트" value="${sv(i)}" data-in="pu" data-f="s" data-i="${i}">`).join('')}</div>`;
+  } else if(t==='wed'){
+    const tg=wedTarget(date);
+    h+=`<div class="muted" style="font-size:12.5px;margin:2px 0 6px">${tg?`목표: 세트당 ${tg}회 (월요일 첫 세트의 절반)`:'목표: 월요일 첫 세트 횟수의 절반'}</div>`;
+    ['풀업','친업','와이드'].forEach((n,r)=>{ h+=`<div class="purow"><span>${n}</span>${[0,1,2].map(c=>`<input inputmode="numeric" placeholder="${tg||''}" value="${sv(r*3+c)}" data-in="pu" data-f="s" data-i="${r*3+c}">`).join('')}</div>`; });
+  } else if(t==='tue'){
+    h+=`<div class="muted" style="font-size:12.5px;margin:2px 0 6px">1 → 2 → 3 … 최대까지 (개당 10초 휴식)</div>
+      <div class="pugrid g2"><div class="unit" data-u="최대"><input inputmode="numeric" placeholder="최대 횟수" value="${esc(pu.peak||'')}" data-in="pu" data-f="peak"></div>
+      <div class="unit" data-u="총"><input inputmode="numeric" placeholder="총 횟수" value="${esc(pu.total||'')}" data-in="pu" data-f="total"></div></div>`;
+  } else if(t==='thu'){
+    const tg=thuTarget(date);
+    h+=`<div class="muted" style="font-size:12.5px;margin:2px 0 6px">수요일 세트당 횟수로, 풀업만으로 못 할 때까지</div>
+      <div class="pugrid g2"><div class="unit" data-u="회"><input inputmode="numeric" placeholder="${tg?tg:'세트당'}" value="${esc(pu.rep||'')}" data-in="pu" data-f="rep"></div>
+      <div class="unit" data-u="세트"><input inputmode="numeric" placeholder="세트 수" value="${esc(pu.cnt||'')}" data-in="pu" data-f="cnt"></div></div>`;
+  }
+  h+=`<div class="pace" id="puTotal">${puFoot(date,pu)}</div>`;
+  return h;
+}
+function puFoot(date,pu){ const t=puType(date,pu), tot=puTotal(date,pu); let x=tot?`총 <b>${tot}회</b>`:'세트별 횟수를 넣으면 총 횟수가 나와요';
+  if(t==='thu' && (num(puObj(pu).cnt)||0)>=9) x+=` · <span style="color:var(--ok)">9세트 달성! 다음 주 수요일 세트당 +1</span>`;
+  if(t==='tue' && !num(puObj(pu).total) && num(puObj(pu).peak)) x+=` <span class="muted">(최대 ${puObj(pu).peak}회 기준 자동 계산)</span>`;
+  return x; }
 function runOf(l){ return (l&&l.daily&&l.daily.run)||{km:'',min:'',sec:''}; }
 function runSecs(r){ return (num(r.min)||0)*60+(num(r.sec)||0); }
 function paceText(r){ const km=num(r.km), t=runSecs(r); if(!km||!t) return ''; const p=Math.round(t/km); return `${Math.floor(p/60)}'${String(p%60).padStart(2,'0')}"/km`; }
@@ -338,7 +395,7 @@ function allLogs(){
 }
 function hasContent(l){
   if(!l) return false;
-  return l.exercises.length>0 || false || l.daily.push.some(v=>v!=='') || l.daily.pullup || !!num(runOf(l).km) || (l.memo||'').trim()!=='';
+  return l.exercises.length>0 || false || l.daily.push.some(v=>v!=='') || puTotal(l.date,l.daily.pullup)>0 || !!num(runOf(l).km) || (l.memo||'').trim()!=='';
 }
 function doneSets(l){ return l.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0); }
 function volume(l){ return l.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+(num(s.w)||0)*(num(s.r)||0),0),0); }
@@ -404,7 +461,7 @@ ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 �
     <div class="pace" id="pace">${paceText(dr)?`페이스 <b>${paceText(dr)}</b> · ${speedText(dr)}`:'거리와 시간을 넣으면 km당 페이스가 나와요'}</div>
     <div class="lbl" style="margin-top:16px">푸쉬업</div>
     <div class="daily">${[0,1,2].map(i=>`<input inputmode="numeric" placeholder="${i+1}세트" value="${esc(dv.push[i])}" data-in="push" data-i="${i}">`).join('')}</div>
-    <div class="toggle"><span class="lbl" style="margin:0">풀업</span><div class="sw ${dv.pullup?'on':''}" data-act="pullup"></div></div>
+    ${puCard(date, dv.pullup)}
     <button class="btn ${dirty?'':'outline'}" id="saveDaily" style="width:100%;padding:12px;margin-top:14px" data-act="savedaily">저장</button>
   </div>`;
   $('#view').innerHTML = h;
@@ -483,14 +540,16 @@ function dayDetail(ds, l){
   const exs = saved(l) ? l.exercises.filter(e=>e.sets.some(s=>s.done)) : [];
   const pending = l && !saved(l) && l.exercises.length>0;
   const push = l ? l.daily.push.filter(v=>v!=='') : [];
-  if(!exs.length && !push.length && !(l&&l.daily.pullup) && !(l&&num(runOf(l).km))){
+  const puS = l ? puSummary(ds, l.daily.pullup) : '';
+  if(!exs.length && !push.length && !puS && !(l&&num(runOf(l).km))){
     h+=`<div class="empty-note">${pending?'운동 완료를 누르지 않아 저장되지 않은 운동이 있어요':'이 날은 운동 기록이 없어요'}</div>`;
   } else {
     if(pending) h+=`<div class="muted" style="margin-bottom:6px">운동 완료 전이라 운동 기록은 아직 저장되지 않았어요</div>`;
     if(exs.length) h+=`<div class="dhead"><span class="tag" style="background:${colorOf(l)}">${esc(titleOf(l))}</span><span class="muted">${doneSets(l)}세트${volume(l)?` · ${Math.round(volume(l)).toLocaleString()}kg`:''}${l.startedAt?` · ${durText(l)}`:''}</span></div>`;
     exs.forEach(e=>{ h+=`<div class="dline"><b>${esc(e.name)}</b><span>${e.sets.filter(s=>s.done).map(s=>fmtSet(e,s)).join('  ')}</span>${(e.memo||'').trim()?`<small>${esc(e.memo.trim())}</small>`:''}</div>`; });
     if(num(runOf(l).km)) h+=`<div class="dline"><b>러닝</b><span>${esc(runSummary(runOf(l)).replace('러닝 ',''))}</span></div>`;
-    if(push.length||l.daily.pullup) h+=`<div class="dline"><b>매일 루틴</b><span>${push.length?`푸쉬업 ${push.join(' / ')}`:''}${push.length&&l.daily.pullup?' · ':''}${l.daily.pullup?'풀업 루틴 ✓':''}</span></div>`;
+    if(push.length) h+=`<div class="dline"><b>푸쉬업</b><span>${push.join(' / ')}</span></div>`;
+    if(puS) h+=`<div class="dline"><b>풀업</b><span>${esc(puS)}</span></div>`;
   }
   h+=`<button class="ghost" style="width:100%;margin-top:10px" data-act="open" data-d="${ds}">${l&&l.exercises.length?'이 날 기록 열기 / 수정':'이 날 운동 기록하기'}</button></div>`;
   return h;
@@ -505,7 +564,7 @@ function renderStats(){
   let push=0, pull=0, runKm=0;
   logs.forEach(l=>{
     if(saved(l)) l.exercises.forEach(e=>{ const n=e.sets.filter(s=>s.done).length; if(n && sets[e.part]!==undefined){ sets[e.part]+=n; days[e.part].add(l.date);} });
-    push += l.daily.push.reduce((a,v)=>a+(num(v)||0),0); if(l.daily.pullup) pull++; runKm += num(runOf(l).km)||0;
+    push += l.daily.push.reduce((a,v)=>a+(num(v)||0),0); pull += puTotal(l.date,l.daily.pullup); runKm += num(runOf(l).km)||0;
   });
   const a=parse(ws), b=parse(we);
   let h = `<div class="datebar"><button class="icon" data-act="wk" data-n="-7">‹</button><div class="d">${a.getMonth()+1}/${a.getDate()} – ${b.getMonth()+1}/${b.getDate()}<small>${ws===weekStart(todayStr())?'이번 주':'주간'}</small></div><button class="icon" data-act="wk" data-n="7">›</button></div>
@@ -518,7 +577,7 @@ function renderStats(){
       <div class="gauge"><div class="band" style="left:${10/MAX*100}%;width:${10/MAX*100}%"></div><div class="fill" style="width:calc(${Math.min(n,MAX)/MAX*100}% - 4px);background:${col}"></div></div></div>`;
   });
   h+=`<div class="legend">초록 띠가 주당 10~20세트 구간이에요. 푸시업·풀업 루틴은 세트 수에 넣지 않았어요.</div></div>
-  <div class="card summary"><div><b>${logs.filter(l=>saved(l)).length}</b><span>운동한 날</span></div><div><b>${push}</b><span>푸시업 합계</span></div><div><b>${pull}</b><span>풀업 루틴</span></div><div><b>${Math.round(runKm*10)/10}</b><span>러닝 km</span></div></div>`;
+  <div class="card summary"><div><b>${logs.filter(l=>saved(l)).length}</b><span>운동한 날</span></div><div><b>${push}</b><span>푸시업 합계</span></div><div><b>${pull}</b><span>풀업 합계</span></div><div><b>${Math.round(runKm*10)/10}</b><span>러닝 km</span></div></div>`;
 
   const names = [...new Set(allLogs().flatMap(l=>l.exercises.filter(e=>e.sets.some(s=>s.done)).map(e=>e.name)))];
   if (!S.progEx || !names.includes(S.progEx)) S.progEx = names[0]||null;
@@ -562,7 +621,7 @@ function claudeText(days){
     (saved(l)?l.exercises:[]).filter(e=>e.sets.some(s=>s.done)).forEach(e=>{
       t += `- ${e.name}[${PARTS[e.part]||''}]: ${e.sets.filter(s=>s.done).map(s=>fieldsOf(e)?fmtSet(e,s):`${s.w||0}x${s.r}`).join(', ')}${(e.memo||'').trim()?` / 메모: ${e.memo.trim()}`:''}\n`; });
     const p=l.daily.push.filter(v=>v!==''); if(p.length) t+=`- 푸시업: ${p.join('/')}\n`;
-    if(l.daily.pullup) t+=`- 밤 풀업 루틴 완료\n`;
+    { const ps=puSummary(l.date,l.daily.pullup); if(ps) t+=`- 풀업: ${ps}\n`; }
     if(num(runOf(l).km)) t+=`- ${runSummary(runOf(l))}\n`;
     if((l.memo||'').trim()) t+=`- 메모: ${l.memo.trim()}\n`;
   });
@@ -823,7 +882,8 @@ $('#view').addEventListener('click',ev=>{
     const part=$('#customPart').value; if(!customEx().some(c=>c.name===n)) saveMy({custom:[...customEx(),{name:n,part}]});
     toastMsg(`"${n}"을 목록에 추가했어요`); S.exFilter=part; render(); return; }
   if(a==='exf'){ S.exFilter=t.dataset.p; render(); return; }
-  if(a==='pullup'){ const d=draftDaily(S.date); d.pullup=!d.pullup; t.classList.toggle('on',d.pullup); markDaily(); return; }
+  if(a==='pufri'){ const d=draftDaily(S.date); d.pullup=puObj(d.pullup); d.pullup.fri=t.dataset.v; d.pullup.s=[]; delete d.pullup.peak; delete d.pullup.total; delete d.pullup.rep; delete d.pullup.cnt; d.pullup=Object.assign({},d.pullup); S.dd[S.date].pullup=d.pullup; render(); markDaily(); return; }
+  if(a==='putimer'){ startTimer(+t.dataset.s,'풀업 휴식'); return; }
   if(a==='savedaily'){ const d=S.dd[S.date]; if(!d){ return; } const l=ensureLog(S.date); l.daily=JSON.parse(JSON.stringify(d)); delete S.dd[S.date]; touch(S.date); render(); toastMsg('매일 루틴을 저장했어요'); return; }
   if(a==='mon'){ const [y,m]=S.calMonth.split('-').map(Number); const d=new Date(y,m-1+(+t.dataset.n),1); S.calMonth=ymd(d).slice(0,7); render(); return; }
   if(a==='calsel'){ S.calSel=t.dataset.d; render(); if(t.dataset.top) window.scrollTo({top:0,behavior:'smooth'}); return; }
@@ -856,6 +916,9 @@ $('#view').addEventListener('input',ev=>{
   if(k==='cf'){ const s=l.exercises[+t.dataset.ei].sets[+t.dataset.si]; s[t.dataset.f]=t.value.replace(/[^0-9.]/g,''); t.style.borderColor=''; }
   else if(k==='w'||k==='r'){ const s=l.exercises[+t.dataset.ei].sets[+t.dataset.si]; s[k]=t.value.replace(/[^0-9.]/g,''); t.style.borderColor=''; }
   else if(k==='rir'){ l.exercises[+t.dataset.ei].sets[+t.dataset.si].rir=t.value; }
+  else if(k==='pu'){ const d=draftDaily(S.date); d.pullup=puObj(d.pullup); const f=t.dataset.f, v=t.value.replace(/[^0-9]/g,'');
+    if(f==='s'){ d.pullup.s=d.pullup.s||[]; d.pullup.s[+t.dataset.i]=v; } else d.pullup[f]=v;
+    const pt=$('#puTotal'); if(pt) pt.innerHTML=puFoot(S.date,d.pullup); markDaily(); return; }
   else if(k==='run'){ const dft=draftDaily(S.date); const r=dft.run; const f=t.dataset.f;
     r[f]= f==='km'? t.value.replace(/[^0-9.]/g,'') : t.value.replace(/[^0-9]/g,'');
     if(f==='sec' && +r.sec>59){ r.sec='59'; t.value='59'; }
