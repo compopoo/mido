@@ -418,7 +418,7 @@ function exCard(e,ei,date){
   return `<div class="card" data-ex="${ei}">
     <div class="ex-head"><div class="ex-name"><span class="tag" style="background:var(--${e.part})">${PARTS[e.part]||''}</span>${esc(e.name)}
       <div class="target">${e.sets.length}세트${e.target?` × ${esc(e.target)}회`:''}${F?'':` · 휴식 <select class="restsel" data-in="rest" data-ei="${ei}">${REST_OPTS.map(v=>`<option value="${v}" ${(+e.rest||90)===v?'selected':''}>${restLabel(v)}</option>`).join('')}${REST_OPTS.includes(+e.rest)?'':`<option value="${e.rest}" selected>${restLabel(+e.rest)}</option>`}</select>`}</div></div>
-      <button class="x ${armed?'armed':''}" data-act="delex" data-ei="${ei}">${armed?'삭제?':'×'}</button></div>
+      <button class="x" data-act="delex" data-ei="${ei}">×</button></div>
     <div class="prev">${prevTxt}</div>
     ${F?`<div class="shead c3"><span>#</span>${F.map(f=>`<span>${f[1]}</span>`).join('')}<span></span></div>`:`<div class="shead"><span>#</span><span>무게</span><span>횟수</span><span></span></div>`}
     <div class="sets">${e.sets.map((s,si)=>{
@@ -796,9 +796,11 @@ $('#view').addEventListener('click',ev=>{
   if(a==='addset'){ const l=ensureLog(S.date); l.exercises[ei].sets.push(blankSet(l.exercises[ei])); touch(S.date); render(); return; }
   if(a==='rmset'){ const l=ensureLog(S.date); l.exercises[ei].sets.pop(); touch(S.date); render(); return; }
   if(a==='delex'){
-    const l=ensureLog(S.date), e=l.exercises[ei];
-    if(S.armed!==e.id){ S.armed=e.id; render(); return; }
-    l.exercises.splice(ei,1); S.armed=null; touch(S.date); render(); return;
+    const l=ensureLog(S.date), e=l.exercises[ei]; const id=e.id;
+    ask('삭제하시겠습니까?', `"${e.name}"을(를) 오늘 운동에서 뺄게요.${e.sets.some(x=>x.done)?'\n입력한 세트 기록도 함께 지워져요.':''}`, true).then(ok=>{
+      if(!ok) return; const i=l.exercises.findIndex(x=>x.id===id); if(i<0) return;
+      l.exercises.splice(i,1); touch(S.date); render(); toastMsg('삭제했어요'); });
+    return;
   }
   if(a==='pick'){ openPicker(); return; }
   if(a==='resetsets'||a==='resetall'){
