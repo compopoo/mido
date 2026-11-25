@@ -132,6 +132,7 @@
   .ai:empty{display:none}
   .muted{color:var(--dim);font-size:12.5px}
   .hidden{display:none!important}
+  .seg.seg3{grid-template-columns:1fr 1fr 1fr}
   .restpop{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px}
   .rpbox{position:relative;overflow:hidden;background:#163322;border:1px solid #2c6a45;border-radius:20px;padding:24px 20px 18px;width:100%;max-width:320px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
   .rpbox .rpicon{font-size:34px} .rpbox b{font-size:22px;color:var(--ok)} .rpbox span{color:var(--sub);font-size:14px;margin-bottom:8px}
@@ -746,12 +747,19 @@ function renderPicker(){
   const l=viewLog(S.date), already=new Set(l.exercises.map(e=>e.name));
   let h=`<div class="sheet-in">
     <div class="sheet-top"><b>운동 추가</b><button class="x" data-pk="close">×</button></div>
-    <div class="seg"><button class="${P.mode==='my'?'on':''}" data-pk="mode" data-v="my">내 운동</button><button class="${P.mode==='all'?'on':''}" data-pk="mode" data-v="all">운동 하나씩</button></div>`;
+    <div class="seg seg3"><button class="${P.mode==='my'?'on':''}" data-pk="mode" data-v="my">내 운동</button><button class="${P.mode==='recent'?'on':''}" data-pk="mode" data-v="recent">최근 운동</button><button class="${P.mode==='all'?'on':''}" data-pk="mode" data-v="all">전체 운동</button></div>`;
   if(P.mode==='my'){
     h+=`<div class="plist">`;
     const rs=myRoutines();
     if(!rs.length) h+=`<div class="empty-note">내 운동이 없어요. 운동 탭에서 "+ 내 운동 추가"로 만들어 주세요.</div>`;
     rs.forEach((r,ri)=>{ h+=`<div class="rcard"><div class="info"><b>${esc(r.name)}</b><small>${esc(routineSummary(r))}</small></div><button class="btn" data-pk="load" data-ri="${ri}">불러오기</button></div>`; });
+    h+=`</div>`;
+  } else if(P.mode==='recent'){
+    const rec=allLogs().filter(saved).filter(x=>x.date!==S.date).reverse().slice(0,20);
+    h+=`<div class="plist">`;
+    if(!rec.length) h+=`<div class="empty-note">아직 완료한 운동이 없어요.<br>운동 완료를 누른 기록이 여기에 쌓여요.</div>`;
+    rec.forEach(r=>{ const d=parse(r.date);
+      h+=`<div class="rcard"><div class="info"><b>${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]}) · ${esc(titleOf(r))}</b><small>${r.exercises.filter(e=>e.sets.some(x=>x.done)).map(e=>`${esc(e.name)} ${e.sets.filter(x=>x.done).length}세트`).join(', ')}</small></div><button class="btn" data-pk="loadrecent" data-d="${r.date}">불러오기</button></div>`; });
     h+=`</div>`;
   } else {
     const by=library(); let items=[]; PART_ORDER.forEach(p=>[...by[p]].forEach(n=>items.push([n,p])));
@@ -823,6 +831,11 @@ document.getElementById('sheet').addEventListener('click',ev=>{
   if(k==='close'){ closeSheet(); return; }
   if(k==='mode'){ P.mode=t.dataset.v; P.part='all'; renderPicker(); return; }
   if(k==='part'){ P.part=t.dataset.v; renderPicker(); return; }
+  if(k==='loadrecent'){ const src=S.logs[t.dataset.d]||getLog(t.dataset.d); if(!src) return; const l=ensureLog(S.date); const has=new Set(l.exercises.map(e=>e.name)); let n=0;
+    src.exercises.filter(e=>e.sets.some(x=>x.done)).forEach(e=>{ if(has.has(e.name)) return; n++;
+      l.exercises.push({id:uid(), name:e.name, part:e.part, target:e.target||'', rest:e.rest||restFor(e.name,e.part), memo:e.memo||'',
+        sets:e.sets.filter(x=>x.done).map(x=>{ const c=JSON.parse(JSON.stringify(x)); c.done=false; return c; })}); });
+    touch(S.date); closeSheet(); render(); const d=parse(src.date); toastMsg(`${d.getMonth()+1}/${d.getDate()} 운동 ${n}개를 불러왔어요`); return; }
   if(k==='load'){ const r=myRoutines()[+t.dataset.ri]; const l=ensureLog(S.date); const has=new Set(l.exercises.map(e=>e.name));
     r.items.forEach(it=>{ if(!has.has(it.name)) l.exercises.push(newExercise(it.name,it.part,S.date,it.sets)); });
     touch(S.date); closeSheet(); render(); toastMsg(`"${r.name}" 불러왔어요`); return; }
