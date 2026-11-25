@@ -650,7 +650,7 @@ function renderMore(){
   $('#view').innerHTML = `
   <div class="sec-title" style="margin-top:4px">백업</div><div class="card">${needBackup()?`<div style="color:var(--bad);font-size:13px;margin-bottom:8px">● 백업한 지 2주가 넘었어요. 지금 저장해 두세요.</div>`:''}
     <div class="muted">기록은 이 폰 안에만 저장돼요. 폰을 바꾸거나 앱을 지우기 전에 백업 파일을 저장해 두세요.</div>
-    <div class="summary" style="margin-top:10px"><div><b>${n}</b><span>기록한 날</span></div><div><b style="font-size:14px">${last?last.slice(5).replace('-','/'):'없음'}</b><span>마지막 백업</span></div></div>
+    <div class="summary" style="margin-top:10px"><div><b style="font-size:15px">${last?last.slice(5).replace('-','/'):'없음'}</b><span>마지막 백업</span></div></div>
     <div class="row2"><button class="btn" data-act="backup">백업 파일 저장</button><button class="btn sec" data-act="restore">백업 불러오기</button></div>
     <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
     <button class="ghost" style="width:100%;margin-top:8px" data-act="copyall">백업 내용 복사 (파일 저장이 안 될 때)</button>
