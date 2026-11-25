@@ -132,6 +132,9 @@
   .ai:empty{display:none}
   .muted{color:var(--dim);font-size:12.5px}
   .hidden{display:none!important}
+  .search{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-bottom:10px}
+  .search:focus-within{border-color:var(--acc)} .search span{font-size:14px;opacity:.7}
+  .search input{flex:1;background:none;border:none;outline:none;padding:11px 0;font-size:15px;color:var(--text)}
   .seg.seg3{grid-template-columns:1fr 1fr 1fr}
   .restpop{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px}
   .rpbox{position:relative;overflow:hidden;background:#163322;border:1px solid #2c6a45;border-radius:20px;padding:24px 20px 18px;width:100%;max-width:320px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -742,6 +745,16 @@ function renderEditor(){
 /* ---------- 오늘 운동 고르기 ---------- */
 function openPicker(){ S.picker={mode:'my', part:'all', sel:[]}; renderPicker(); }
 function closeSheet(){ S.picker=null; S.editor=null; $('#sheet').classList.add('hidden'); $('#sheet').innerHTML=''; document.body.style.overflow=''; }
+function allListHTML(P, already){
+  const by=library(); let items=[]; PART_ORDER.forEach(p=>[...by[p]].forEach(n=>items.push([n,p])));
+  if(P.part!=='all') items=items.filter(([,p])=>p===P.part);
+  const q=(P.q||'').replace(/\s/g,'').toLowerCase();
+  if(q) items=items.filter(([n])=>n.replace(/\s/g,'').toLowerCase().includes(q));
+  if(!items.length) return `<div class="empty-note">"${esc(P.q||'')}" 운동이 없어요.<br>운동 탭의 "목록에 없는 운동 직접 추가"에서 만들 수 있어요.</div>`;
+  return items.map(([n,p])=>{ const has=already.has(n), on=P.sel.some(x=>x[0]===n);
+    return `<button class="prow-item ${on?'on':''} ${has?'has':''}" data-pk="tog" data-n="${esc(n)}" data-p="${p}" ${has?'disabled':''}>
+      <span class="box">${on||has?'✓':''}</span><span class="nm">${esc(n)}</span><span class="tag" style="background:var(--${p})">${PARTS[p]}</span>${has?'<span class="muted">추가됨</span>':''}</button>`; }).join('');
+}
 function renderPicker(){
   const P=S.picker; if(!P) return;
   const l=viewLog(S.date), already=new Set(l.exercises.map(e=>e.name));
@@ -762,12 +775,8 @@ function renderPicker(){
       h+=`<div class="rcard"><div class="info"><b>${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]}) · ${esc(titleOf(r))}</b><small>${r.exercises.filter(e=>e.sets.some(x=>x.done)).map(e=>`${esc(e.name)} ${e.sets.filter(x=>x.done).length}세트`).join(', ')}</small></div><button class="btn" data-pk="loadrecent" data-d="${r.date}">불러오기</button></div>`; });
     h+=`</div>`;
   } else {
-    const by=library(); let items=[]; PART_ORDER.forEach(p=>[...by[p]].forEach(n=>items.push([n,p])));
-    if(P.part!=='all') items=items.filter(([,p])=>p===P.part);
-    h+=`<div class="chips"><button class="chip ${P.part==='all'?'on':''}" data-pk="part" data-v="all">전체</button>${PART_ORDER.map(p=>`<button class="chip ${P.part===p?'on':''}" data-pk="part" data-v="${p}">${PARTS[p]}</button>`).join('')}</div><div class="plist">`;
-    items.forEach(([n,p])=>{ const has=already.has(n), on=P.sel.some(x=>x[0]===n);
-      h+=`<button class="prow-item ${on?'on':''} ${has?'has':''}" data-pk="tog" data-n="${esc(n)}" data-p="${p}" ${has?'disabled':''}>
-        <span class="box">${on||has?'✓':''}</span><span class="nm">${esc(n)}</span><span class="tag" style="background:var(--${p})">${PARTS[p]}</span>${has?'<span class="muted">추가됨</span>':''}</button>`; });
+    h+=`<div class="search"><span>🔍</span><input id="pkq" type="search" placeholder="운동 이름 검색" value="${esc(P.q||'')}" autocomplete="off"></div>`;
+    h+=`<div class="chips"><button class="chip ${P.part==='all'?'on':''}" data-pk="part" data-v="all">전체</button>${PART_ORDER.map(p=>`<button class="chip ${P.part===p?'on':''}" data-pk="part" data-v="${p}">${PARTS[p]}</button>`).join('')}</div><div class="plist" id="plistAll">${allListHTML(P, already)}`;
     h+=`</div><button class="btn" style="width:100%;padding:13px;margin-top:10px" data-pk="add" ${P.sel.length?'':'disabled'}>${P.sel.length?`${P.sel.length}개 추가`:'운동을 골라 주세요'}</button>`;
   }
   h+=`</div>`;
@@ -844,7 +853,7 @@ document.getElementById('sheet').addEventListener('click',ev=>{
   if(k==='add'){ if(!P.sel.length) return; const l=ensureLog(S.date);
     P.sel.forEach(([n,p])=>l.exercises.push(newExercise(n,p,S.date))); touch(S.date); closeSheet(); render(); return; }
 });
-document.getElementById('sheet').addEventListener('input',ev=>{ if(ev.target.id==='rName' && S.editor) S.editor.name=ev.target.value; });
+document.getElementById('sheet').addEventListener('input',ev=>{ if(ev.target.id==='pkq' && S.picker){ S.picker.q=ev.target.value; const l=viewLog(S.date); $('#plistAll').innerHTML=allListHTML(S.picker,new Set(l.exercises.map(e=>e.name))); return; } if(ev.target.id==='rName' && S.editor) S.editor.name=ev.target.value; });
 
 function render(){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab)); updateGear();
