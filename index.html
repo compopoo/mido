@@ -1053,6 +1053,9 @@ function profile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{
 function saveProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
 function bmrHist(){ const P=profile(); let h=Array.isArray(P.bmrHist)?P.bmrHist.slice():[]; if(!h.length && num(P.bmr)) h=[{from:'0000-00-00',v:P.bmr}]; return h.sort((a,b)=>a.from<b.from?-1:1); }
 function bmrFor(date){ const h=bmrHist(); if(!h.length) return 0; let v=h[0].v; h.forEach(x=>{ if(x.from<=date) v=x.v; }); return num(v)||0; }
+S.dsd={};
+function draftDiet(date){ if(!S.dsd[date]) S.dsd[date]=JSON.parse(JSON.stringify(dietOf(viewLog(date)))); return S.dsd[date]; }
+function markDiet(){ const b=document.getElementById('saveDiet'); if(b) b.className='btn'; }
 function dietOf(l){ const d=(l&&l.diet)||{}; MEALS.forEach(([k])=>{ if(!Array.isArray(d[k])) d[k]=[]; }); return d; }
 function mealKcal(arr){ return arr.reduce((a,x)=>a+(num(x.k)||0),0); }
 function dietKcal(l){ const d=dietOf(l); return MEALS.reduce((a,[k])=>a+mealKcal(d[k]),0); }
@@ -1083,7 +1086,7 @@ function burnOf(l, date){
 const kc=n=>Math.round(n).toLocaleString();
 
 function renderDiet(){
-  const date=S.date, l=viewLog(date), d=parse(date), P=profile(), dt=dietOf(l);
+  const date=S.date, l=viewLog(date), d=parse(date), P=profile(), dt=S.dsd[date]||dietOf(l), dirtyD=!!S.dsd[date];
   let h=`<div class="datebar"><button class="icon" data-act="day" data-n="-1">‹</button>
     <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div>
     <button class="icon" data-act="day" data-n="1">›</button></div>`;
@@ -1097,7 +1100,7 @@ function renderDiet(){
       ${hb.length>1||(hb.length&&hb[0].from!=='0000-00-00')?`<div class="muted" style="font-size:12px;margin-top:10px;line-height:1.7">변경 기록: ${hb.map(x=>`${x.from==='0000-00-00'?'처음':x.from.slice(5).replace('-','/')} ${x.v}`).join(' → ')}</div>`:''}</div>`;
   }
   // 하루 수지
-  const intake=dietKcal(l), bmr=bmrFor(date), life=Math.round(bmr*0.2), B=burnOf(l,date), out=bmr+life+B.total, diff=intake-out;
+  const intake=dietKcal({diet:dt}), bmr=bmrFor(date), life=Math.round(bmr*0.2), B=burnOf(l,date), out=bmr+life+B.total, diff=intake-out;
   if(bmr){
     const pct=Math.round(intake/bmr*100);
     h+=`<div class="card kcal">
@@ -1129,7 +1132,9 @@ function renderDiet(){
     <input type="file" id="dtFile" accept="image/*" class="hidden">
     ${ph.length?`<div class="thumbs">${ph.map(p=>`<img src="${p.data}" data-act="dtview" data-id="${p.id}">`).join('')}</div>`:`<div class="muted" style="font-size:12.5px;margin-top:10px">같은 장소·같은 자세로 찍으면 변화가 잘 보여요</div>`}
     <button class="ghost" style="width:100%;margin-top:12px" data-act="dtgallery">눈바디 모아보기 ${(S.photos||[]).length?`(${S.photos.length}장)`:''}</button>
-  </div>`;
+  </div>
+  <button class="btn ${dirtyD?'':'outline'}" id="saveDiet" style="width:100%;padding:13px;margin:4px 0 8px" data-act="dtsave">저장</button>
+  <div class="muted" style="font-size:12px;text-align:center;margin-bottom:14px">${dirtyD?'저장하지 않은 식단·체중이 있어요':'사진은 올리면 바로 저장돼요'}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1189,10 +1194,11 @@ $('#view').addEventListener('click',ev=>{
     const latest=h[h.length-1].v; saveProfile({...P, bmr:latest, bmrHist:h, }); S.editProfile=false; render();
     const d0=parse(S.date); toastMsg(first?'저장했어요':`${d0.getMonth()+1}/${d0.getDate()}부터 ${b}kcal로 계산해요`); }
   else if(a==='dteditpf'){ S.editProfile=true; render(); }
-  else if(a==='dtadd'){ const l=ensureLog(S.date); l.diet=dietOf(l); l.diet[t.dataset.m].push({n:'',k:''}); touch(S.date); render();
+  else if(a==='dtsave'){ const d=S.dsd[S.date]; if(!d) return; const l=ensureLog(S.date); l.diet=JSON.parse(JSON.stringify(d)); MEALS.forEach(([k])=>{ l.diet[k]=l.diet[k].filter(x=>(x.n||'').trim()||num(x.k)); }); delete S.dsd[S.date]; touch(S.date); render(); toastMsg('식단을 저장했어요'); }
+  else if(a==='dtadd'){ const dd=draftDiet(S.date); dd[t.dataset.m].push({n:'',k:''}); render();
     const ins=document.querySelectorAll(`[data-di=fn][data-m="${t.dataset.m}"]`); if(ins.length) ins[ins.length-1].focus(); }
-  else if(a==='dtdel'){ const l=ensureLog(S.date); l.diet=dietOf(l); l.diet[t.dataset.m].splice(+t.dataset.i,1); touch(S.date); render(); }
-  else if(a==='dtsug'){ const l=ensureLog(S.date); l.diet=dietOf(l); const x=l.diet[t.dataset.m][+t.dataset.i]; x.n=t.dataset.n; x.k=t.dataset.k; touch(S.date); render(); }
+  else if(a==='dtdel'){ const dd=draftDiet(S.date); dd[t.dataset.m].splice(+t.dataset.i,1); render(); }
+  else if(a==='dtsug'){ const dd=draftDiet(S.date); const x=dd[t.dataset.m][+t.dataset.i]; x.n=t.dataset.n; x.k=t.dataset.k; render(); }
   else if(a==='dtphoto'){ $('#dtFile').click(); }
   else if(a==='dtview'){ viewPhoto(t.dataset.id); }
   else if(a==='dtgallery'){ openGallery(); }
@@ -1203,11 +1209,11 @@ $('#view').addEventListener('change',async ev=>{
   catch(e){ toastMsg('사진을 저장하지 못했어요'); }
 });
 $('#view').addEventListener('input',ev=>{
-  const t=ev.target, k=t.dataset.di; if(!k) return; const l=ensureLog(S.date); l.diet=dietOf(l);
-  if(k==='wt'){ l.diet.wt=t.value.replace(/[^0-9.]/g,''); if(S.date>=todayStr()||!profile().weight) saveProfile({...profile(), weight:l.diet.wt}); touch(S.date); return; }
-  const x=l.diet[t.dataset.m][+t.dataset.i];
-  if(k==='fk'){ x.k=t.value.replace(/[^0-9]/g,''); touch(S.date); updateKcalLive(); return; }
-  if(k==='fn'){ x.n=t.value; touch(S.date);
+  const t=ev.target, k=t.dataset.di; if(!k) return; const dd=draftDiet(S.date); markDiet();
+  if(k==='wt'){ dd.wt=t.value.replace(/[^0-9.]/g,''); return; }
+  const x=dd[t.dataset.m][+t.dataset.i];
+  if(k==='fk'){ x.k=t.value.replace(/[^0-9]/g,''); updateKcalLive(); return; }
+  if(k==='fn'){ x.n=t.value;
     const sg=document.getElementById(`sg-${t.dataset.m}-${t.dataset.i}`); const q=t.value.replace(/\s/g,'');
     if(!sg) return; if(q.length<1){ sg.classList.add('hidden'); return; }
     const hits=FOODS.filter(([n])=>n.replace(/\s/g,'').includes(q)).slice(0,6);
