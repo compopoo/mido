@@ -716,6 +716,7 @@ async function copyText(text, fallbackEl){
   catch(e){ if(fallbackEl){ fallbackEl.value=text; fallbackEl.classList.remove('hidden'); fallbackEl.focus(); fallbackEl.select(); } toast('아래 글을 길게 눌러 복사하세요'); return false; }
 }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2600); }
+const APP_VER='v70';
 function renderMore(){
   const n=Object.keys(S.logs).length;
   let last=''; try{ last=localStorage.getItem('setlog.lastBackup')||''; }catch(e){}
@@ -733,7 +734,8 @@ function renderMore(){
     <div class="muted">기간을 골라 기록을 복사해요. Claude 채팅에 붙여넣으면 분석해 줘요.</div>
     <div class="row2"><button class="btn sec" data-act="claude" data-days="7">최근 1주</button><button class="btn sec" data-act="claude" data-days="28">최근 4주</button></div>
     <textarea class="ta-out hidden" id="claudeOut2" readonly></textarea>
-  </div>`;
+  </div>
+  <div class="muted" style="text-align:center;font-size:11.5px;margin:6px 0 20px">악어일지 ${APP_VER}</div>`;
 }
 function backupJSON(withPhotos=true){ return JSON.stringify({app:'setlog',version:2,exportedAt:new Date().toISOString(),logs:S.logs,my:S.my,profile:profile(),photos:withPhotos?(S.photos||[]):undefined}); }
 function markBackup(){ try{ localStorage.setItem('setlog.lastBackup', todayStr()); }catch(e){} updateGear(); }
