@@ -27,6 +27,7 @@
   html,body{margin:0;background:var(--bg);forced-color-adjust:none;color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px}
   button,input,select,textarea{font:inherit;color:inherit}
   ::placeholder{color:#9aa1ad;opacity:1} select option{background:#fff;color:#1b1f27}
+  .updbar{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:40;max-width:516px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(20,30,50,.15);padding:10px 10px 10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px} .updbar .btn{padding:9px 14px}
   .deco{position:fixed;bottom:0;left:0;right:0;height:85vh;min-height:520px;pointer-events:none;z-index:0;background:radial-gradient(ellipse 150% 100% at 100% 100%, var(--wave,#7aa7ff) 0%, color-mix(in srgb, var(--wave,#7aa7ff) 45%, transparent) 35%, transparent 80%);opacity:.75}
   #view{will-change:transform;touch-action:pan-y}
   html,body{overflow-x:hidden}
@@ -716,7 +717,7 @@ async function copyText(text, fallbackEl){
   catch(e){ if(fallbackEl){ fallbackEl.value=text; fallbackEl.classList.remove('hidden'); fallbackEl.focus(); fallbackEl.select(); } toast('아래 글을 길게 눌러 복사하세요'); return false; }
 }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2600); }
-const APP_VER='v73';
+const APP_VER='v74';
 function renderMore(){
   const n=Object.keys(S.logs).length;
   let last=''; try{ last=localStorage.getItem('setlog.lastBackup')||''; }catch(e){}
@@ -1314,7 +1315,18 @@ S.photos=[]; loadPhotos().then(()=>{ if(S.tab==='diet') render(); });
 setSync('','');
 render();
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
-if('serviceWorker' in navigator && location.protocol.startsWith('http')){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})); }
+// 새 버전 확인: 앱을 열거나 다시 볼 때 서버 버전과 비교해서 알려줌
+async function checkUpdate(){
+  if(!location.protocol.startsWith('http') || document.getElementById('updBar')) return;
+  try{ const t=await (await fetch('index.html?v='+Date.now(),{cache:'no-store'})).text(); const m=t.match(/const APP_VER='(v\d+)'/);
+    if(m && m[1]!==APP_VER){ const b=document.createElement('div'); b.id='updBar'; b.className='updbar';
+      b.innerHTML=`<span>새 버전(${m[1]})이 있어요</span><button class="btn">업데이트</button>`;
+      b.querySelector('button').onclick=async()=>{ try{ const r=await navigator.serviceWorker.getRegistration(); if(r) await r.update(); }catch(e){} location.reload(); };
+      document.body.appendChild(b); } }catch(e){}
+}
+window.addEventListener('load',()=>setTimeout(checkUpdate,1500));
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkUpdate(); });
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') for(const k in saveTimers){ clearTimeout(saveTimers[k]); flush(k); } });
 </script>
 </body>
