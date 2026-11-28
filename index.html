@@ -28,7 +28,7 @@
   button,input,select,textarea{font:inherit;color:inherit}
   ::placeholder{color:#9aa1ad;opacity:1} select option{background:#fff;color:#1b1f27}
   .updbar{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:40;max-width:516px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(20,30,50,.15);padding:10px 10px 10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px} .updbar .btn{padding:9px 14px}
-  .deco{position:fixed;bottom:0;left:0;right:0;height:85vh;min-height:520px;pointer-events:none;z-index:0;background:radial-gradient(ellipse 150% 100% at 100% 100%, var(--wave,#7aa7ff) 0%, color-mix(in srgb, var(--wave,#7aa7ff) 45%, transparent) 35%, transparent 80%);opacity:.75}
+  .deco{position:fixed;top:0;bottom:0;left:0;right:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 85% 55% at 50% 50%, var(--wave,#7aa7ff) 0%, color-mix(in srgb, var(--wave,#7aa7ff) 45%, transparent) 35%, transparent 80%);opacity:.75}
   #view{will-change:transform;touch-action:pan-y}
   html,body{overflow-x:hidden}
   .app{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 150px;min-height:100vh}
@@ -717,7 +717,7 @@ async function copyText(text, fallbackEl){
   catch(e){ if(fallbackEl){ fallbackEl.value=text; fallbackEl.classList.remove('hidden'); fallbackEl.focus(); fallbackEl.select(); } toast('아래 글을 길게 눌러 복사하세요'); return false; }
 }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2600); }
-const APP_VER='v74';
+const APP_VER='v75';
 function renderMore(){
   const n=Object.keys(S.logs).length;
   let last=''; try{ last=localStorage.getItem('setlog.lastBackup')||''; }catch(e){}
