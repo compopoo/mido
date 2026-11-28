@@ -23,6 +23,7 @@
     --chest:#ff8a5c; --back:#5aa9ff; --legs:#4cc27e; --shoulder:#c38bff; --tri:#ffb37f; --bi:#7fd3ff; --abs:#f2c14e; --forearm:#9fb3c8; --cardio:#ff8fb1; --warmup:#b0b5bd;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html[data-page=today]{--bg:#e8f0ff} html[data-page=diet]{--bg:#ffedf0} html[data-page=history]{--bg:#e6f6ec} html[data-page=stats]{--bg:#efebff} html[data-page=ex]{--bg:#fff3e3}
   html,body{margin:0;background:var(--bg);forced-color-adjust:none;color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px}
   button,input,select,textarea{font:inherit;color:inherit}
   .app{max-width:540px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 150px;min-height:100vh}
@@ -87,7 +88,7 @@
   .summary span{font-size:11px;color:var(--sub)}
   .rest-day{text-align:center;color:var(--sub);padding:28px 10px}
   .rest-day b{display:block;font-size:20px;color:var(--text);margin-bottom:6px}
-  nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
   nav .in{display:flex;max-width:540px;width:100%}
   nav button{flex:1;background:none;border:none;padding:10px 0 12px;color:var(--dim);font-size:12px;cursor:pointer}
   nav button i{display:block;font-style:normal;font-size:19px;margin-bottom:2px}
@@ -925,6 +926,7 @@ document.getElementById('sheet').addEventListener('click',ev=>{
 document.getElementById('sheet').addEventListener('input',ev=>{ if(ev.target.id==='pkq' && S.picker){ S.picker.q=ev.target.value; const l=viewLog(S.date); $('#plistAll').innerHTML=allListHTML(S.picker,new Set(l.exercises.map(e=>e.name))); return; } if(ev.target.id==='rName' && S.editor) S.editor.name=ev.target.value; });
 
 function render(){
+  document.documentElement.dataset.page=S.tab; const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#f4f6f9';
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab)); updateGear();
   if(S.tab==='today') renderToday(); else if(S.tab==='history') renderHistory(); else if(S.tab==='stats') renderStats(); else if(S.tab==='ex') renderExercises(); else if(S.tab==='diet') renderDiet(); else renderMore();
 }
@@ -1131,7 +1133,7 @@ function renderDiet(){
       <div class="krow tot"><span>총 소모</span><span>${kc(out)}</span></div>
       <div class="kres ${intake?(diff>0?'plus':'minus'):''}">${intake? (diff>0?`<b>+${kc(diff)} kcal</b> 소모보다 더 먹었어요`:`<b>−${kc(-diff)} kcal</b> 소모보다 덜 먹었어요`) : '먹은 음식을 넣으면 오늘 수지가 나와요'}</div>
     </div>`;
-  } else h+=`<div class="card"><div class="khead"><div><span class="muted">먹은 칼로리</span><b>${kc(intake)}<small> kcal</small></b></div></div><div class="muted" style="font-size:12.5px;margin-top:6px">아래에 기초대사량을 넣으면 하루 수지가 나와요</div></div>`;
+  } else h+=`<div class="card kcal"><div class="khead"><div><span class="muted">먹은 칼로리</span><b>${kc(intake)}<small> kcal</small></b></div></div><div class="muted" style="font-size:12.5px;margin-top:6px">아래에 기초대사량을 넣으면 하루 수지가 나와요</div></div>`;
   // 끼니
   MEALS.forEach(([k,name])=>{ const arr=dt[k];
     h+=`<div class="card meal"><div class="mhead"><b>${name}</b><span class="muted">${mealKcal(arr)?kc(mealKcal(arr))+' kcal':''}</span></div>`;
