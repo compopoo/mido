@@ -17,22 +17,23 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
   :root{color-scheme:light only;
-    --bg:#f4f6f9; --card:#ffffff; --card2:#eef1f5; --line:#e2e6ec;
+    --bg:#f4f6f9; --card:rgba(255,255,255,.8); --card2:#eef1f5; --line:#e2e6ec;
     --text:#1b1f27; --sub:#5b6472; --dim:#939aa6;
     --acc:#2563eb; --acc2:#3b82f6; --ok:#16a34a; --warn:#d97706; --bad:#e5484d;
     --chest:#ff8a5c; --back:#5aa9ff; --legs:#4cc27e; --shoulder:#c38bff; --tri:#ffb37f; --bi:#7fd3ff; --abs:#f2c14e; --forearm:#9fb3c8; --cardio:#ff8fb1; --warmup:#b0b5bd;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html[data-page=today]{--line:#c7d9ff;--tint:#b9d0ff} html[data-page=diet]{--line:#ffc9d2;--tint:#ffbfcb} html[data-page=history]{--line:#b9e5c9;--tint:#aee3c2} html[data-page=stats]{--line:#d6ccff;--tint:#cfc3ff} html[data-page=ex]{--line:#ffd9a8;--tint:#ffd49c}
+  html[data-page=today]{--wave:#7aa7ff;--line:#c7d9ff;--tint:#b9d0ff} html[data-page=diet]{--wave:#ff8fa3;--line:#ffc9d2;--tint:#ffbfcb} html[data-page=history]{--wave:#6fd39a;--line:#b9e5c9;--tint:#aee3c2} html[data-page=stats]{--wave:#a996ff;--line:#d6ccff;--tint:#cfc3ff} html[data-page=ex]{--wave:#ffb562;--line:#ffd9a8;--tint:#ffd49c}
   html,body{margin:0;background:var(--bg);forced-color-adjust:none;color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px}
   button,input,select,textarea{font:inherit;color:inherit}
-  .app{max-width:540px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 150px;min-height:100vh}
+  .deco{position:absolute;top:0;left:0;right:0;height:520px;overflow:hidden;pointer-events:none;z-index:0}
+  .deco svg{width:100%;height:100%;filter:blur(4px);opacity:.95} .deco stop{stop-color:var(--wave,#7aa7ff)} .deco path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .app{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 150px;min-height:100vh}
   .gear{position:relative;width:38px;height:38px;border-radius:11px;background:var(--card);border:1px solid var(--line);font-size:18px;color:var(--sub);cursor:pointer;display:grid;place-items:center}
   .gear.on{border-color:var(--acc);color:var(--acc)}
   .gear .rdot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
   header{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
   .brand{font-weight:900;font-size:22px;letter-spacing:-.5px;position:relative;z-index:0}
-  .brand:before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:108px;height:76px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,var(--tint,#c7d9ff) 0%,transparent 68%);pointer-events:none;transition:background .3s}
   .brand span{color:var(--acc)}
   .sync{font-size:12px;color:var(--dim)}
   .sync.ok{color:var(--ok)} .sync.err{color:var(--bad)}
@@ -193,7 +194,7 @@
   .runrow input:focus{border-color:var(--acc)}
   .pace{margin-top:8px;font-size:13px;color:var(--sub)} .pace b{color:var(--acc2);font-family:"JetBrains Mono",monospace;font-size:15px}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:center;justify-content:center;padding:24px}
-  .mbox{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 18px 16px;width:100%;max-width:340px;text-align:center}
+  .mbox{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 18px 16px;width:100%;max-width:340px;text-align:center}
   .mbox b{font-size:17px;display:block} .mbox p{color:var(--sub);font-size:14px;line-height:1.6;margin:8px 0 14px;white-space:pre-line}
   .mbox .btn{padding:12px}
   .mbox .btn.danger{background:var(--bad);color:#fff}
@@ -230,7 +231,7 @@
   .namein{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:11px;outline:none;font-size:15px;margin-bottom:12px}
   .toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:#fff;box-shadow:0 6px 20px rgba(20,30,50,.15);border:1px solid var(--line);padding:9px 14px;border-radius:12px;font-size:13px;z-index:30;display:none}
   .sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-  .sheet-in{background:var(--card);border-top-left-radius:20px;border-top-right-radius:20px;width:100%;max-width:540px;max-height:86vh;display:flex;flex-direction:column;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
+  .sheet-in{background:#fff;border-top-left-radius:20px;border-top-right-radius:20px;width:100%;max-width:540px;max-height:86vh;display:flex;flex-direction:column;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
   .sheet-in>*{flex-shrink:0}
   .sheet-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:17px}
   .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--card2);border-radius:10px;padding:3px;margin-bottom:10px}
@@ -249,6 +250,13 @@
 </style>
 </head>
 <body>
+<div class="deco" aria-hidden="true"><svg viewBox="0 0 400 520" preserveAspectRatio="xMidYMin slice">
+  <defs><linearGradient id="dg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-opacity=".0"/><stop offset=".35" stop-opacity=".9"/><stop offset="1" stop-opacity=".35"/></linearGradient>
+  <linearGradient id="dg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-opacity=".8"/><stop offset="1" stop-opacity="0"/></linearGradient></defs>
+  <path d="M120 120 C150 70 190 40 220 30 C200 70 190 100 210 110 C250 90 290 60 320 70 C300 100 290 130 330 140 C360 120 380 100 410 80" stroke="url(#dg1)" stroke-width="16"/>
+  <path d="M10 330 C40 300 60 280 80 270 C70 300 70 320 90 320 C130 300 160 280 190 270 C180 300 180 320 210 318 C250 300 280 280 310 270" stroke="url(#dg1)" stroke-width="14"/>
+  <path d="M410 40 C360 140 300 260 220 360 C170 420 110 470 0 520" stroke="url(#dg2)" stroke-width="12"/>
+</svg></div>
 <div class="app">
   <header>
     <div class="brand">악어<span>일지</span></div>
@@ -805,7 +813,7 @@ function renderEditor(){
     <div class="chips"><button class="chip ${E.part==='all'?'on':''}" data-ed="part" data-v="all">전체</button>${PART_ORDER.map(p=>`<button class="chip ${E.part===p?'on':''}" data-ed="part" data-v="${p}">${PARTS[p]}</button>`).join('')}</div><div class="plist">`;
   PART_ORDER.forEach(p=>{ if(E.part!=='all'&&E.part!==p) return; [...by[p]].forEach(n=>{ const on=chosen.has(n);
     h+=`<button class="prow-item ${on?'on':''}" data-ed="tog" data-n="${esc(n)}" data-p="${p}"><span class="box">${on?'✓':''}</span><span class="nm">${esc(n)}</span><span class="tag" style="background:var(--${p})">${PARTS[p]}</span></button>`; }); });
-  h+=`</div><div class="row2" style="position:sticky;bottom:-14px;background:var(--card);padding:10px 0 14px;width:100%;margin-bottom:-14px">
+  h+=`</div><div class="row2" style="position:sticky;bottom:-14px;background:#fff;padding:10px 0 14px;width:100%;margin-bottom:-14px">
     ${E.ri==null?`<button class="btn sec" data-ed="close">취소</button>`:`<button class="btn sec" data-ed="del" style="color:var(--bad)">${E.armed?'정말 삭제':'삭제'}</button>`}
     <button class="btn" data-ed="save">저장</button></div></div>`;
   const sh=$('#sheet'); const keep = sh.querySelector('.sheet-in') ? sh.querySelector('.sheet-in').scrollTop : 0;
