@@ -1000,7 +1000,7 @@ $('#view').addEventListener('click',ev=>{
     copyText(txt, $(a==='claude'?'#claudeOut2':'#claudeOut')); return; }
   if(a==='backup'){
     try{ const blob=new Blob([backupJSON()],{type:'application/json'}); const u=URL.createObjectURL(blob);
-      const el=document.createElement('a'); el.href=u; el.download=`운동일지-백업-${todayStr()}.json`; document.body.appendChild(el); el.click(); el.remove();
+      const el=document.createElement('a'); el.href=u; el.download=`악어일지-백업-${todayStr()}.json`; document.body.appendChild(el); el.click(); el.remove();
       setTimeout(()=>URL.revokeObjectURL(u),2000); markBackup(); toast('백업 파일을 저장했어요'); setTimeout(render,300);
     }catch(e){ toast('파일 저장이 안 돼요. 아래 "백업 내용 복사"를 써 주세요'); }
     return; }
