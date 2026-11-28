@@ -133,6 +133,33 @@
   .ai:empty{display:none}
   .muted{color:var(--dim);font-size:12.5px}
   .hidden{display:none!important}
+  nav button i{font-size:18px}
+  .kcal .khead{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .kcal .khead b{display:block;font-family:"JetBrains Mono",monospace;font-size:30px;line-height:1.2} .kcal .khead small{font-size:13px;color:var(--sub)}
+  .ghost.sm{padding:6px 10px;font-size:12px}
+  .kbar{position:relative;height:10px;background:var(--card2);border-radius:6px;overflow:visible}
+  .kbar i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:6px} .kbar em{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);opacity:.6}
+  .krow{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 0;color:var(--sub)} .krow span:last-child{font-family:"JetBrains Mono",monospace;color:var(--text)}
+  .krow small{color:var(--dim);font-size:11.5px} .ksub{font-size:11.5px;color:var(--dim);margin:-2px 0 4px 10px}
+  .krow.tot{border-top:1px solid var(--line);margin-top:4px;padding-top:9px;color:var(--text);font-weight:500}
+  .kres{margin-top:10px;padding:11px;border-radius:10px;background:var(--card2);text-align:center;font-size:13.5px;color:var(--sub)}
+  .kres b{font-family:"JetBrains Mono",monospace;font-size:16px} .kres.minus b{color:var(--ok)} .kres.plus b{color:var(--warn)}
+  .meal .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px} .meal .mhead b{font-size:15px} .meal .mhead span{font-family:"JetBrains Mono",monospace;font-size:13px}
+  .frow{display:grid;grid-template-columns:1fr 96px 26px;gap:6px;align-items:center;margin-bottom:6px}
+  .frow input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none;font-size:14px}
+  .frow input:focus{border-color:var(--acc)} .frow .unit{position:relative} .frow .unit input{padding-right:38px;text-align:right;font-family:"JetBrains Mono",monospace}
+  .frow .unit:after{content:attr(data-u);position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--dim);pointer-events:none}
+  .sugg{background:var(--card2);border:1px solid var(--line);border-radius:10px;margin:-2px 0 8px;overflow:hidden}
+  .sugg button{width:100%;display:flex;justify-content:space-between;background:none;border:none;border-bottom:1px solid var(--line);padding:10px 12px;font-size:13.5px;cursor:pointer;text-align:left}
+  .sugg button:last-child{border-bottom:none} .sugg b{font-family:"JetBrains Mono",monospace;color:var(--acc2);font-weight:500;font-size:12.5px}
+  .addf{width:100%;margin-top:2px}
+  .thumbs{display:flex;gap:8px;margin-top:10px;overflow-x:auto} .thumbs img{width:76px;height:100px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--line)}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px} .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .cmp figure,.pgrid figure{margin:0} .cmp img,.pgrid img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;cursor:pointer;display:block}
+  .cmp figcaption,.pgrid figcaption{font-size:11.5px;color:var(--sub);text-align:center;margin-top:4px;font-family:"JetBrains Mono",monospace}
+  .pview{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+  .pview img{max-width:100%;max-height:78vh;border-radius:12px} .pvbar{display:flex;gap:8px;align-items:center;margin-top:12px;width:100%;max-width:420px}
+  .pvbar span{flex:1;color:var(--sub);font-family:"JetBrains Mono",monospace;font-size:13px} .pvbar .btn{padding:10px 16px}
   .search{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:0 14px;margin-bottom:10px}
   .search:focus-within{border-color:var(--acc)} .search span{font-size:14px;opacity:.7}
   .search input::-webkit-search-cancel-button{display:none}
@@ -237,6 +264,7 @@
 
 <nav><div class="in">
   <button data-tab="today" class="on"><i>◉</i>오늘</button>
+  <button data-tab="diet"><i>◐</i>식단</button>
   <button data-tab="history"><i>▦</i>달력</button>
   <button data-tab="stats"><i>▮</i>통계</button>
   <button data-tab="ex"><i>☰</i>운동</button>
@@ -407,7 +435,7 @@ function allLogs(){
 }
 function hasContent(l){
   if(!l) return false;
-  return l.exercises.length>0 || false || l.daily.push.some(v=>v!=='') || puTotal(l.date,l.daily.pullup)>0 || !!num(runOf(l).km) || (l.memo||'').trim()!=='';
+  return l.exercises.length>0 || hasDiet(l) || l.daily.push.some(v=>v!=='') || puTotal(l.date,l.daily.pullup)>0 || !!num(runOf(l).km) || (l.memo||'').trim()!=='';
 }
 function doneSets(l){ return l.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).length,0); }
 function volume(l){ return l.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done).reduce((b,s)=>b+(num(s.w)||0)*(num(s.r)||0),0),0); }
@@ -536,7 +564,7 @@ function renderHistory(){
   const tail=(7-(lead+days)%7)%7; for(let i=1;i<=tail;i++) h+=cell(ymd(new Date(y,mo,i)),false);
   h += `</div><div class="legend" style="margin-top:10px"><span style="color:var(--chest)">●</span> 가슴 &nbsp; <span style="color:var(--back)">●</span> 등 &nbsp; <span style="color:var(--legs)">●</span> 하체 &nbsp; <span style="color:var(--shoulder)">●</span> 어깨</div></div>`;
   h += dayDetail(S.calSel, byDate[S.calSel]);
-  const month = logs.filter(l=>l.date.startsWith(m)).reverse();
+  const month = logs.filter(l=>l.date.startsWith(m) && (l.exercises.length || (l.daily&&(l.daily.push.some(v=>v!=='')||puTotal(l.date,l.daily.pullup)>0||num(runOf(l).km))))).reverse();
   h += `<div class="sec-title">이번 달 기록 ${month.length}일</div><div class="card">`;
   if (!month.length) h+=`<div class="empty-note">아직 기록이 없어요</div>`;
   month.forEach(l=>{ const d=parse(l.date);
@@ -553,7 +581,7 @@ function dayDetail(ds, l){
   const pending = l && !saved(l) && l.exercises.length>0;
   const push = l ? l.daily.push.filter(v=>v!=='') : [];
   const puS = l ? puSummary(ds, l.daily.pullup) : '';
-  if(!exs.length && !push.length && !puS && !(l&&num(runOf(l).km))){
+  if(!exs.length && !push.length && !puS && !(l&&num(runOf(l).km)) && !(l&&hasDiet(l))){
     h+=`<div class="empty-note">${pending?'운동 완료를 누르지 않아 저장되지 않은 운동이 있어요':'이 날은 운동 기록이 없어요'}</div>`;
   } else {
     if(pending) h+=`<div class="muted" style="margin-bottom:6px">운동 완료 전이라 운동 기록은 아직 저장되지 않았어요</div>`;
@@ -562,6 +590,7 @@ function dayDetail(ds, l){
     if(num(runOf(l).km)) h+=`<div class="dline"><b>러닝</b><span>${esc(runSummary(runOf(l)).replace('러닝 ',''))}</span></div>`;
     if(push.length) h+=`<div class="dline"><b>푸쉬업</b><span>${push.join(' / ')}</span></div>`;
     if(puS) h+=`<div class="dline"><b>풀업</b><span>${esc(puS)}</span></div>`;
+    if(l && hasDiet(l)) h+=`<div class="dline"><b>식단</b><span>${dietKcal(l)?`${kc(dietKcal(l))} kcal`:''}${num(l.diet.wt)?` · 체중 ${l.diet.wt}kg`:''}</span></div>`;
   }
   h+=`<button class="ghost" style="width:100%;margin-top:10px" data-act="open" data-d="${ds}">${l&&l.exercises.length?'이 날 기록 열기 / 수정':'이 날 운동 기록하기'}</button></div>`;
   return h;
@@ -627,7 +656,7 @@ function claudeText(days){
   const from = addDays(todayStr(),-(days-1));
   const logs = allLogs().filter(l=>l.date>=from && hasContent(l));
   if(!logs.length) return '';
-  let t = `[운동일지 기록 ${from} ~ ${todayStr()}]\n운동 기록이야. 17년 연구 기준(각 부위 주 2회, 고중량, 풀 가동범위, 주당 10~20세트, 중요한 운동 먼저)으로 봐 주고, 잘한 점 / 고칠 점 / 다음 주 바꿀 것을 알려줘.\n`;
+  const pf=profile(); let t = `[운동일지 기록 ${from} ~ ${todayStr()}]${num(pf.bmr)?` (기초대사량 ${pf.bmr}kcal${num(pf.weight)?`, 체중 ${pf.weight}kg`:''})`:''}\n운동 기록이야. 17년 연구 기준(각 부위 주 2회, 고중량, 풀 가동범위, 주당 10~20세트, 중요한 운동 먼저)으로 봐 주고, 잘한 점 / 고칠 점 / 다음 주 바꿀 것을 알려줘.\n`;
   logs.forEach(l=>{ const d=parse(l.date);
     t += `\n${l.date}(${DOW[d.getDay()]}) ${titleOf(l)}${l.finishedAt?` · 운동 시간 ${durText(l)}`:''}\n`;
     (saved(l)?l.exercises:[]).filter(e=>e.sets.some(s=>s.done)).forEach(e=>{
@@ -635,6 +664,7 @@ function claudeText(days){
     const p=l.daily.push.filter(v=>v!==''); if(p.length) t+=`- 푸시업: ${p.join('/')}\n`;
     { const ps=puSummary(l.date,l.daily.pullup); if(ps) t+=`- 풀업: ${ps}\n`; }
     if(num(runOf(l).km)) t+=`- ${runSummary(runOf(l))}\n`;
+    if(hasDiet(l)){ const dd=dietOf(l); t+=`- 식단 ${kc(dietKcal(l))}kcal: ${MEALS.map(([k,n])=>dd[k].filter(x=>(x.n||'').trim()).length?`${n} ${dd[k].filter(x=>(x.n||'').trim()).map(x=>`${x.n}${num(x.k)?`(${x.k})`:''}`).join(', ')}`:'').filter(Boolean).join(' / ')}${num(dd.wt)?` · 체중 ${dd.wt}kg`:''}\n`; const B=burnOf(l,l.date); if(B.total) t+=`- 운동 소모 추정 ${kc(B.total)}kcal\n`; }
     if((l.memo||'').trim()) t+=`- 메모: ${l.memo.trim()}\n`;
   });
   return t;
@@ -663,7 +693,7 @@ function renderMore(){
     <textarea class="ta-out hidden" id="claudeOut2" readonly></textarea>
   </div>`;
 }
-function backupJSON(){ return JSON.stringify({app:'setlog',version:1,exportedAt:new Date().toISOString(),logs:S.logs,my:S.my}); }
+function backupJSON(withPhotos=true){ return JSON.stringify({app:'setlog',version:2,exportedAt:new Date().toISOString(),logs:S.logs,my:S.my,profile:profile(),photos:withPhotos?(S.photos||[]):undefined}); }
 function markBackup(){ try{ localStorage.setItem('setlog.lastBackup', todayStr()); }catch(e){} updateGear(); }
 function needBackup(){ const n=Object.keys(S.logs).length; if(n<3) return false; let last=''; try{ last=localStorage.getItem('setlog.lastBackup')||''; }catch(e){} if(!last) return true; return (parse(todayStr())-parse(last))/86400000 >= 14; }
 function updateGear(){ const d=document.getElementById('gdot'); if(d) d.classList.toggle('hidden',!needBackup()); const g=document.getElementById('gear'); if(g) g.classList.toggle('on',S.tab==='more'); }
@@ -674,6 +704,8 @@ function mergeBackup(text){
   for(const k in logs){ const r=logs[k]; if(!/^\d{4}-\d{2}-\d{2}$/.test(k) || !r || !Array.isArray(r.exercises)) continue;
     if(!S.logs[k] || (r.updatedAt||0) > (S.logs[k].updatedAt||0)){ S.logs[k]=r; delete S.local[k]; added++; } }
   if(data.my && Array.isArray(data.my.list)) saveMy(data.my);
+  if(data.profile && typeof data.profile==='object' && !num(profile().bmr)) saveProfile(data.profile);
+  if(Array.isArray(data.photos)){ const have=new Set((S.photos||[]).map(p=>p.id)); Promise.all(data.photos.filter(p=>p&&p.id&&p.data&&!have.has(p.id)).map(p=>photoPut(p).catch(()=>{}))).then(loadPhotos).then(()=>render()); }
   lsSet(JSON.stringify(S.logs)); toast(`${added}일 기록을 불러왔어요`); render();
 }
 
@@ -746,7 +778,7 @@ function renderEditor(){
 
 /* ---------- 오늘 운동 고르기 ---------- */
 function openPicker(){ S.picker={mode:'my', part:'all', sel:[]}; renderPicker(); }
-function closeSheet(){ S.picker=null; S.editor=null; $('#sheet').classList.add('hidden'); $('#sheet').innerHTML=''; document.body.style.overflow=''; }
+function closeSheet(){ S.picker=null; S.editor=null; S.gallery=false; $('#sheet').classList.add('hidden'); $('#sheet').innerHTML=''; document.body.style.overflow=''; }
 function allListHTML(P, already){
   const by=library(); let items=[]; PART_ORDER.forEach(p=>[...by[p]].forEach(n=>items.push([n,p])));
   if(P.part!=='all') items=items.filter(([,p])=>p===P.part);
@@ -859,7 +891,7 @@ document.getElementById('sheet').addEventListener('input',ev=>{ if(ev.target.id=
 
 function render(){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab)); updateGear();
-  if(S.tab==='today') renderToday(); else if(S.tab==='history') renderHistory(); else if(S.tab==='stats') renderStats(); else if(S.tab==='ex') renderExercises(); else renderMore();
+  if(S.tab==='today') renderToday(); else if(S.tab==='history') renderHistory(); else if(S.tab==='stats') renderStats(); else if(S.tab==='ex') renderExercises(); else if(S.tab==='diet') renderDiet(); else renderMore();
 }
 document.querySelector('nav').addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(!b) return; S.tab=b.dataset.tab; S.armed=null; render(); window.scrollTo(0,0); });
 
@@ -936,8 +968,8 @@ $('#view').addEventListener('click',ev=>{
     }catch(e){ toast('파일 저장이 안 돼요. 아래 "백업 내용 복사"를 써 주세요'); }
     return; }
   if(a==='restore'){ $('#restoreFile').click(); return; }
-  if(a==='copyall'){ copyText(backupJSON(), $('#backupOut')).then(ok=>{ if(ok) markBackup(); }); 
-    const ta=$('#backupOut'); ta.classList.remove('hidden'); ta.removeAttribute('readonly'); $('#pasteApply').classList.remove('hidden'); if(!ta.value) ta.value=backupJSON(); return; }
+  if(a==='copyall'){ copyText(backupJSON(false), $('#backupOut')).then(ok=>{ if(ok) markBackup(); }); 
+    const ta=$('#backupOut'); ta.classList.remove('hidden'); ta.removeAttribute('readonly'); $('#pasteApply').classList.remove('hidden'); if(!ta.value) ta.value=backupJSON(false); return; }
   if(a==='pasteapply'){ mergeBackup($('#backupOut').value); return; }
 });
 $('#view').addEventListener('change',ev=>{
@@ -969,9 +1001,209 @@ $('#view').addEventListener('input',ev=>{
 document.getElementById('gear').addEventListener('click',()=>{ S.tab=S.tab==='more'?'today':'more'; S.armed=null; render(); window.scrollTo(0,0); });
 document.getElementById('rpOk').addEventListener('click',closeRestPop);
 document.getElementById('restPop').addEventListener('click',e=>{ if(e.target.id==='restPop') closeRestPop(); });
+/* ---------- 식단 · 칼로리 · 눈바디 ---------- */
+const MEALS=[['b','아침'],['l','점심'],['d','저녁'],['s','간식']];
+// 자주 먹는 음식 대략 칼로리 (1회 기준, 참고용)
+const FOODS=[
+ ['쌀밥 1공기',300],['현미밥 1공기',290],['잡곡밥 1공기',300],['햇반 작은공기',210],['김밥 1줄',450],['참치김밥 1줄',520],['주먹밥 1개',200],['유부초밥 1인분',480],
+ ['볶음밥 1인분',600],['김치볶음밥 1인분',600],['비빔밥 1그릇',600],['제육덮밥 1인분',750],['카레라이스 1인분',650],['오므라이스 1인분',650],['죽 1그릇',300],
+ ['김치찌개 1인분',250],['된장찌개 1인분',200],['순두부찌개 1인분',300],['부대찌개 1인분',500],['미역국 1그릇',100],['소고기무국 1그릇',150],['북엇국 1그릇',120],
+ ['갈비탕 1그릇',500],['설렁탕 1그릇',450],['삼계탕 1그릇',900],['육개장 1그릇',400],['감자탕 1인분',700],['순대국 1그릇',600],['해장국 1그릇',450],
+ ['짜장면 1그릇',800],['짬뽕 1그릇',700],['탕수육 1인분',700],['라면 1봉',500],['컵라면 1개',300],['칼국수 1그릇',600],['물냉면 1그릇',550],['비빔냉면 1그릇',600],
+ ['쫄면 1그릇',550],['우동 1그릇',450],['잔치국수 1그릇',450],['떡국 1그릇',600],['만둣국 1그릇',550],['만두 5개',300],
+ ['삼겹살 200g',900],['목살 200g',600],['소고기 등심 200g',500],['닭가슴살 100g',110],['닭가슴살 1팩',120],['닭가슴살 스테이크 1팩',130],['닭다리살 100g',190],
+ ['프라이드치킨 반마리',1000],['양념치킨 반마리',1150],['치킨 1조각',250],['제육볶음 1인분',450],['불고기 1인분',400],['닭갈비 1인분',600],['족발 1인분',700],
+ ['보쌈 1인분',600],['돈가스 1인분',800],['고등어구이 1토막',250],['연어 100g',200],['참치캔 1개',250],['소시지 1개',100],['스팸 1조각',150],
+ ['계란 1개',75],['삶은 계란 1개',75],['계란후라이 1개',100],['계란말이 1인분',200],['두부 반모',150],['김치 1접시',20],['나물 1접시',50],['김 1봉',30],
+ ['샐러드 1그릇',150],['닭가슴살 샐러드',350],['포케 1그릇',550],['샌드위치 1개',400],['토스트 1개',350],['햄버거 1개',550],['감자튀김 M',350],['피자 1조각',300],
+ ['떡볶이 1인분',500],['순대 1인분',350],['튀김 1개',150],['라볶이 1인분',650],['핫도그 1개',300],['어묵 1꼬치',60],
+ ['식빵 1장',100],['베이글 1개',280],['크로와상 1개',230],['도넛 1개',250],['케이크 1조각',350],['쿠키 1개',100],['초콜릿 1개',250],['과자 1봉',500],
+ ['아이스크림 1개',200],['떡 1개',100],['오트밀 1그릇',150],['시리얼+우유',300],['그래놀라 1컵',450],
+ ['바나나 1개',90],['사과 1개',150],['귤 1개',40],['딸기 10개',40],['포도 1송이',200],['수박 1조각',100],['방울토마토 10개',30],['블루베리 1컵',85],
+ ['고구마 1개',150],['감자 1개',100],['옥수수 1개',150],['견과류 한줌',170],['아몬드 한줌',170],['땅콩버터 1큰술',95],
+ ['우유 1컵',130],['저지방우유 1컵',90],['두유 1팩',130],['그릭요거트 1컵',150],['요거트 1개',100],['치즈 1장',60],
+ ['프로틴 쉐이크 1스쿱',120],['프로틴바 1개',200],['단백질 음료 1병',120],
+ ['아메리카노',10],['카페라떼',180],['바닐라라떼',250],['카푸치노',120],['녹차라떼',250],['콜라 1캔',140],['제로콜라 1캔',0],['사이다 1캔',140],['오렌지주스 1컵',110],
+ ['맥주 500cc',200],['소주 1병',400],['막걸리 1병',450],['와인 1잔',120],['하이볼 1잔',150]
+];
+const PROFILE_KEY='setlog.profile';
+function profile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function saveProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
+function dietOf(l){ const d=(l&&l.diet)||{}; MEALS.forEach(([k])=>{ if(!Array.isArray(d[k])) d[k]=[]; }); return d; }
+function mealKcal(arr){ return arr.reduce((a,x)=>a+(num(x.k)||0),0); }
+function dietKcal(l){ const d=dietOf(l); return MEALS.reduce((a,[k])=>a+mealKcal(d[k]),0); }
+function hasDiet(l){ const d=l&&l.diet; if(!d) return false; return MEALS.some(([k])=>Array.isArray(d[k])&&d[k].some(x=>(x.n||'').trim()||num(x.k))) || !!num(d.wt); }
+function weightFor(date){ // 그날 또는 그 이전 가장 최근 체중
+  const ds=Object.keys(S.logs).filter(k=>k<=date && num(S.logs[k].diet&&S.logs[k].diet.wt)).sort();
+  const loc=S.local[date]; if(loc && num(loc.diet&&loc.diet.wt)) return num(loc.diet.wt);
+  if(ds.length) return num(S.logs[ds[ds.length-1]].diet.wt);
+  return num(profile().weight)||0;
+}
+// 운동 소모 칼로리 (대략)
+function burnOf(l, date){
+  const wt=weightFor(date)||70; const r={weights:0,cardio:0,run:0,body:0};
+  if(!l) return {...r,total:0,wt};
+  let cardioMin=0, wsets=0;
+  l.exercises.forEach(e=>{ const done=e.sets.filter(s=>s.done);
+    if(fieldsOf(e)){ const m=done.reduce((a,s)=>a+(num(s.min)||0),0); cardioMin+=m; r.cardio+=9*wt*m/60; }
+    else wsets+=done.length; });
+  if(wsets){ let min=wsets*2.5;
+    if(l.startedAt&&l.finishedAt){ const tot=(l.finishedAt-l.startedAt)/60000 - cardioMin; if(tot>5) min=Math.min(tot, wsets*6); }
+    r.weights=5*wt*min/60; }
+  const run=runOf(l); if(num(run.km)) r.run=1.0*wt*num(run.km);
+  const push=(l.daily&&l.daily.push||[]).reduce((a,v)=>a+(num(v)||0),0);
+  r.body=push*0.5 + puTotal(date,l.daily&&l.daily.pullup)*1.0;
+  Object.keys(r).forEach(k=>r[k]=Math.round(r[k]));
+  return {...r,total:r.weights+r.cardio+r.run+r.body,wt};
+}
+const kc=n=>Math.round(n).toLocaleString();
+
+function renderDiet(){
+  const date=S.date, l=viewLog(date), d=parse(date), P=profile(), dt=dietOf(l);
+  let h=`<div class="datebar"><button class="icon" data-act="day" data-n="-1">‹</button>
+    <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div>
+    <button class="icon" data-act="day" data-n="1">›</button></div>`;
+  // 프로필
+  if(!num(P.bmr) || S.editProfile){
+    h+=`<div class="card"><div class="lbl">내 기초대사량과 체중</div>
+      <div class="muted" style="font-size:12.5px;margin-bottom:10px;line-height:1.6">인바디에 나온 기초대사량을 넣어 주세요. 체중은 운동 소모 칼로리 계산에 쓰여요.</div>
+      <div class="pugrid g2"><div class="unit" data-u="kcal"><input inputmode="numeric" id="pfBmr" placeholder="기초대사량" value="${esc(P.bmr||'')}"></div>
+      <div class="unit" data-u="kg"><input inputmode="decimal" id="pfWt" placeholder="체중" value="${esc(P.weight||'')}"></div></div>
+      <button class="btn" style="width:100%;padding:12px;margin-top:10px" data-act="dtprofile">저장</button></div>`;
+  }
+  // 하루 수지
+  const intake=dietKcal(l), bmr=num(P.bmr)||0, life=Math.round(bmr*0.2), B=burnOf(l,date), out=bmr+life+B.total, diff=intake-out;
+  if(bmr){
+    const pct=Math.round(intake/bmr*100);
+    h+=`<div class="card kcal">
+      <div class="khead"><div><span class="muted">먹은 칼로리</span><b>${kc(intake)}<small> kcal</small></b></div><button class="ghost sm" data-act="dteditpf">기초대사량 ${kc(bmr)}</button></div>
+      <div class="kbar"><i style="width:${Math.min(100,intake/Math.max(out,1)*100)}%"></i><em style="left:${Math.min(100,bmr/Math.max(out,intake,1)*100)}%"></em></div>
+      <div class="muted" style="font-size:12.5px;margin:6px 0 12px">기초대사량의 <b style="color:var(--text)">${pct}%</b>를 먹었어요</div>
+      <div class="krow"><span>기초대사량</span><span>${kc(bmr)}</span></div>
+      <div class="krow"><span>일상 활동 <small>(기초대사량의 20%)</small></span><span>${kc(life)}</span></div>
+      <div class="krow"><span>운동 소모 <small>(대략)</small></span><span>${kc(B.total)}</span></div>
+      ${B.total?`<div class="ksub">${[B.weights?`근력 ${kc(B.weights)}`:'',B.cardio?`유산소 ${kc(B.cardio)}`:'',B.run?`러닝 ${kc(B.run)}`:'',B.body?`푸쉬업·풀업 ${kc(B.body)}`:''].filter(Boolean).join(' · ')}</div>`:''}
+      <div class="krow tot"><span>총 소모</span><span>${kc(out)}</span></div>
+      <div class="kres ${intake?(diff>0?'plus':'minus'):''}">${intake? (diff>0?`<b>+${kc(diff)} kcal</b> 소모보다 더 먹었어요`:`<b>−${kc(-diff)} kcal</b> 소모보다 덜 먹었어요`) : '먹은 음식을 넣으면 오늘 수지가 나와요'}</div>
+    </div>`;
+  }
+  // 끼니
+  MEALS.forEach(([k,name])=>{ const arr=dt[k];
+    h+=`<div class="card meal"><div class="mhead"><b>${name}</b><span class="muted">${mealKcal(arr)?kc(mealKcal(arr))+' kcal':''}</span></div>`;
+    arr.forEach((x,i)=>{ h+=`<div class="frow"><input class="fn" value="${esc(x.n||'')}" placeholder="음식" data-di="fn" data-m="${k}" data-i="${i}" autocomplete="off">
+      <div class="unit" data-u="kcal"><input class="fk" inputmode="numeric" value="${esc(x.k||'')}" placeholder="0" data-di="fk" data-m="${k}" data-i="${i}"></div>
+      <button class="x" data-act="dtdel" data-m="${k}" data-i="${i}">×</button></div>
+      <div class="sugg hidden" id="sg-${k}-${i}"></div>`; });
+    h+=`<button class="ghost addf" data-act="dtadd" data-m="${k}">+ 음식 추가</button></div>`; });
+  h+=`<div class="muted" style="font-size:12px;margin:-4px 4px 14px;line-height:1.6">음식 이름을 치면 자주 먹는 음식의 대략 칼로리가 떠요. 양이 다르면 숫자만 고치면 돼요.</div>`;
+  // 눈바디
+  const ph=(S.photos||[]).filter(p=>p.date===date);
+  h+=`<div class="sec-title">눈바디 · 체중</div><div class="card">
+    <div class="pugrid g2" style="grid-template-columns:1fr auto"><div class="unit" data-u="kg"><input inputmode="decimal" placeholder="오늘 체중" value="${esc(dt.wt||'')}" data-di="wt"></div>
+      <button class="btn sec" data-act="dtphoto" style="padding:0 16px">+ 사진</button></div>
+    <input type="file" id="dtFile" accept="image/*" class="hidden">
+    ${ph.length?`<div class="thumbs">${ph.map(p=>`<img src="${p.data}" data-act="dtview" data-id="${p.id}">`).join('')}</div>`:`<div class="muted" style="font-size:12.5px;margin-top:10px">같은 장소·같은 자세로 찍으면 변화가 잘 보여요</div>`}
+    <button class="ghost" style="width:100%;margin-top:12px" data-act="dtgallery">눈바디 모아보기 ${(S.photos||[]).length?`(${S.photos.length}장)`:''}</button>
+  </div>`;
+  $('#view').innerHTML=h;
+}
+
+/* 사진 저장소 (IndexedDB) */
+const PDB={db:null};
+function pdb(){ return new Promise((res,rej)=>{ if(PDB.db) return res(PDB.db); if(!window.indexedDB) return rej(new Error('no idb'));
+  const r=indexedDB.open('setlog-photos',1);
+  r.onupgradeneeded=()=>{ r.result.createObjectStore('photos',{keyPath:'id'}); };
+  r.onsuccess=()=>{ PDB.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); }); }
+async function photoAll(){ try{ const db=await pdb(); return await new Promise((res,rej)=>{ const q=db.transaction('photos').objectStore('photos').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>rej(q.error); }); }catch(e){ return []; } }
+async function photoPut(p){ const db=await pdb(); return new Promise((res,rej)=>{ const tx=db.transaction('photos','readwrite'); tx.objectStore('photos').put(p); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function photoDel(id){ const db=await pdb(); return new Promise((res,rej)=>{ const tx=db.transaction('photos','readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function loadPhotos(){ S.photos=(await photoAll()).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.ts-b.ts); }
+function shrink(file){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(file), img=new Image();
+  img.onload=()=>{ const M=1000, s=Math.min(1,M/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg',0.8)); };
+  img.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error('img')); }; img.src=u; }); }
+
+function openGallery(){
+  const ps=S.photos||[]; const wts=allLogs().filter(l=>num(l.diet&&l.diet.wt)).map(l=>({d:l.date,v:num(l.diet.wt)}));
+  let h=`<div class="sheet-in tall"><div class="sheet-top"><b>눈바디 모아보기</b><button class="x" data-g="close">×</button></div>`;
+  if(wts.length>=2) h+=`<div class="lbl">체중 추이</div>${weightChart(wts)}`;
+  else if(wts.length===1) h+=`<div class="muted" style="margin-bottom:10px">체중 기록이 2번 이상 쌓이면 그래프가 생겨요</div>`;
+  if(!ps.length) h+=`<div class="empty-note">아직 사진이 없어요.<br>식단 탭 아래 "+ 사진"으로 기록해 보세요.</div>`;
+  else {
+    if(ps.length>=2){ const a=ps[0], b=ps[ps.length-1];
+      h+=`<div class="lbl" style="margin-top:6px">처음 vs 최근</div><div class="cmp">${[a,b].map(p=>`<figure><img src="${p.data}" data-g="view" data-id="${p.id}"><figcaption>${p.date.slice(5).replace('-','/')}${weightFor(p.date)?` · ${weightFor(p.date)}kg`:''}</figcaption></figure>`).join('')}</div>`; }
+    h+=`<div class="lbl" style="margin-top:12px">전체 사진</div><div class="pgrid">${ps.slice().reverse().map(p=>`<figure><img src="${p.data}" data-g="view" data-id="${p.id}"><figcaption>${p.date.slice(5).replace('-','/')}</figcaption></figure>`).join('')}</div>`;
+  }
+  h+=`</div>`;
+  const sh=$('#sheet'); sh.innerHTML=h; sh.classList.remove('hidden'); document.body.style.overflow='hidden'; S.gallery=true;
+}
+function weightChart(pts){
+  const W=480,H=150,pl=36,pr=10,pt=12,pb=22; const vs=pts.map(p=>p.v); const lo=Math.floor(Math.min(...vs)-1), hi=Math.ceil(Math.max(...vs)+1);
+  const x=i=>pl+(W-pl-pr)*i/(pts.length-1), y=v=>pt+(H-pt-pb)*(1-(v-lo)/((hi-lo)||1));
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;margin-bottom:8px">${[lo,hi].map(t=>`<line x1="${pl}" x2="${W-pr}" y1="${y(t)}" y2="${y(t)}" stroke="#2e323a" stroke-dasharray="3 4"/><text x="${pl-6}" y="${y(t)+4}" fill="#636a76" font-size="11" text-anchor="end">${t}</text>`).join('')}
+    <path d="${pts.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')}" fill="none" stroke="#5fd38d" stroke-width="2.5"/>
+    ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="3.5" fill="#5fd38d"/>`).join('')}
+    <text x="${pl}" y="${H-5}" fill="#636a76" font-size="11">${pts[0].d.slice(5).replace('-','/')} ${pts[0].v}kg</text>
+    <text x="${W-pr}" y="${H-5}" fill="#636a76" font-size="11" text-anchor="end">${pts[pts.length-1].d.slice(5).replace('-','/')} ${pts[pts.length-1].v}kg</text></svg>`;
+}
+function viewPhoto(id){
+  const p=(S.photos||[]).find(x=>x.id===id); if(!p) return;
+  const v=document.createElement('div'); v.className='pview'; v.innerHTML=`<img src="${p.data}"><div class="pvbar"><span>${p.date.slice(5).replace('-','/')}${weightFor(p.date)?` · ${weightFor(p.date)}kg`:''}</span><button class="btn sec" data-pv="del">삭제</button><button class="btn" data-pv="close">닫기</button></div>`;
+  document.body.appendChild(v);
+  v.addEventListener('click',ev=>{ const b=ev.target.closest('[data-pv]'); if(!b){ if(ev.target===v) v.remove(); return; }
+    if(b.dataset.pv==='close') v.remove();
+    else ask('사진을 삭제할까요?','삭제한 사진은 되돌릴 수 없어요.',true).then(async ok=>{ if(!ok) return; await photoDel(id); await loadPhotos(); v.remove(); if(S.gallery) openGallery(); render(); toastMsg('사진을 삭제했어요'); });
+  });
+}
+
+// 이벤트
+$('#view').addEventListener('click',ev=>{
+  const t=ev.target.closest('[data-act]'); if(!t) return; const a=t.dataset.act;
+  if(a==='dtprofile'){ const b=$('#pfBmr').value.replace(/[^0-9]/g,''), w=$('#pfWt').value.replace(/[^0-9.]/g,''); if(!b){ toastMsg('기초대사량을 넣어 주세요'); return; }
+    saveProfile({...profile(), bmr:b, weight:w}); S.editProfile=false; render(); toastMsg('저장했어요'); }
+  else if(a==='dteditpf'){ S.editProfile=true; render(); }
+  else if(a==='dtadd'){ const l=ensureLog(S.date); l.diet=dietOf(l); l.diet[t.dataset.m].push({n:'',k:''}); touch(S.date); render();
+    const ins=document.querySelectorAll(`[data-di=fn][data-m="${t.dataset.m}"]`); if(ins.length) ins[ins.length-1].focus(); }
+  else if(a==='dtdel'){ const l=ensureLog(S.date); l.diet=dietOf(l); l.diet[t.dataset.m].splice(+t.dataset.i,1); touch(S.date); render(); }
+  else if(a==='dtsug'){ const l=ensureLog(S.date); l.diet=dietOf(l); const x=l.diet[t.dataset.m][+t.dataset.i]; x.n=t.dataset.n; x.k=t.dataset.k; touch(S.date); render(); }
+  else if(a==='dtphoto'){ $('#dtFile').click(); }
+  else if(a==='dtview'){ viewPhoto(t.dataset.id); }
+  else if(a==='dtgallery'){ openGallery(); }
+});
+$('#view').addEventListener('change',async ev=>{
+  if(ev.target.id!=='dtFile') return; const f=ev.target.files[0]; ev.target.value=''; if(!f) return;
+  try{ const data=await shrink(f); await photoPut({id:uid()+Date.now().toString(36), date:S.date, data, ts:Date.now()}); await loadPhotos(); render(); toastMsg('사진을 저장했어요'); }
+  catch(e){ toastMsg('사진을 저장하지 못했어요'); }
+});
+$('#view').addEventListener('input',ev=>{
+  const t=ev.target, k=t.dataset.di; if(!k) return; const l=ensureLog(S.date); l.diet=dietOf(l);
+  if(k==='wt'){ l.diet.wt=t.value.replace(/[^0-9.]/g,''); if(S.date>=todayStr()||!profile().weight) saveProfile({...profile(), weight:l.diet.wt}); touch(S.date); return; }
+  const x=l.diet[t.dataset.m][+t.dataset.i];
+  if(k==='fk'){ x.k=t.value.replace(/[^0-9]/g,''); touch(S.date); updateKcalLive(); return; }
+  if(k==='fn'){ x.n=t.value; touch(S.date);
+    const sg=document.getElementById(`sg-${t.dataset.m}-${t.dataset.i}`); const q=t.value.replace(/\s/g,'');
+    if(!sg) return; if(q.length<1){ sg.classList.add('hidden'); return; }
+    const hits=FOODS.filter(([n])=>n.replace(/\s/g,'').includes(q)).slice(0,6);
+    if(!hits.length){ sg.classList.add('hidden'); return; }
+    sg.innerHTML=hits.map(([n,c])=>`<button data-act="dtsug" data-m="${t.dataset.m}" data-i="${t.dataset.i}" data-n="${esc(n)}" data-k="${c}"><span>${esc(n)}</span><b>${c} kcal</b></button>`).join('');
+    sg.classList.remove('hidden'); }
+});
+$('#view').addEventListener('focusout',ev=>{ if(ev.target.dataset && ev.target.dataset.di==='fn'){ setTimeout(()=>{ const sg=document.getElementById(`sg-${ev.target.dataset.m}-${ev.target.dataset.i}`); if(sg && !sg.matches(':hover')) sg.classList.add('hidden'); if(S.tab==='diet') updateKcalLive(); },200); } });
+function updateKcalLive(){ /* 숫자만 바뀌었을 때 화면 갱신 (입력 중 포커스 유지) */
+  const ae=document.activeElement; if(ae && ae.dataset && (ae.dataset.di==='fn'||ae.dataset.di==='fk')) { clearTimeout(updateKcalLive.t); updateKcalLive.t=setTimeout(()=>{ const a2=document.activeElement; if(!(a2&&a2.dataset&&a2.dataset.di)) render(); },1200); return; }
+  render(); }
+document.getElementById('sheet').addEventListener('click',ev=>{
+  const g=ev.target.closest('[data-g]'); if(!g) return;
+  if(g.dataset.g==='close'){ S.gallery=false; closeSheet(); }
+  else if(g.dataset.g==='view') viewPhoto(g.dataset.id);
+});
+
+$('#view').addEventListener('pointerdown',e=>{ if(e.target.closest('.sugg')) e.preventDefault(); });
+
 /* ---------- 시작 ---------- */
 try{ S.logs=JSON.parse(lsGet()||'{}')||{}; }catch(e){ S.logs={}; }
 try{ S.my=JSON.parse(localStorage.getItem('setlog.my')||'null'); }catch(e){ S.my=null; }
+S.photos=[]; loadPhotos().then(()=>{ if(S.tab==='diet') render(); });
 setSync('','');
 render();
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
