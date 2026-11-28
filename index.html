@@ -169,6 +169,9 @@
   .rpbox{position:relative;overflow:hidden;background:#163322;border:1px solid #2c6a45;border-radius:20px;padding:24px 20px 18px;width:100%;max-width:320px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
   .rpbox .rpicon{font-size:34px} .rpbox b{font-size:22px;color:var(--ok)} .rpbox span{color:var(--sub);font-size:14px;margin-bottom:8px}
   .rpbox .btn{width:100%;padding:12px;background:var(--ok);color:#0d2416}
+.savepop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:90;pointer-events:none}
+  .savepop>div{background:#163322;border:1px solid #2c6a45;color:var(--text);border-radius:16px;padding:18px 26px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:spop .18s ease-out}
+  .savepop i{font-style:normal;color:var(--ok);font-size:20px} @keyframes spop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
   .rpbar{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--ok);transform-origin:left}
   .restpop.in .rpbar{animation:rpshrink 3s linear forwards} @keyframes rpshrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
   .puhead{display:flex;align-items:center;gap:8px;margin:16px 0 8px} .puhead .muted{flex:1;font-size:12.5px}
@@ -205,6 +208,7 @@
   .wd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:7px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
   .wd .w{font-size:11px;color:var(--dim)} .wd .n{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700}
   .wd .lab{font-size:10px;font-weight:700;border-radius:5px;padding:1px 4px;min-height:16px;max-width:92%;overflow:hidden;white-space:nowrap;color:var(--sub)}
+  .wd .lab.kc{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:10px;color:var(--acc);padding:1px 0;letter-spacing:-.02em}
   .wd.sat .w,.wd.sat .n{color:#6fa8ff} .wd.sun .w,.wd.sun .n{color:#ff6b6b}
   .wd.today .n{text-decoration:underline;text-decoration-color:var(--acc);text-decoration-thickness:2.5px;text-underline-offset:5px} .wd.sel{border:1.5px solid var(--acc)}
   .restsel{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc2);font-family:"JetBrains Mono",monospace;font-size:12px;padding:2px 4px;margin-left:2px;outline:none}
@@ -252,6 +256,7 @@
   <div class="toast" id="toast"></div>
   <div class="sheet hidden" id="sheet"></div>
   <div class="restpop hidden" id="restPop"><div class="rpbox"><div class="rpicon">⏰</div><b>쉬는 시간 끝</b><span id="rpSub">다음 세트 가요</span><button class="btn" id="rpOk">확인</button><i class="rpbar"></i></div></div>
+  <div class="savepop hidden" id="savePop"><div><i>✓</i>저장되었습니다</div></div>
   <div class="modal hidden" id="modal"><div class="mbox"><b id="mTitle"></b><p id="mText"></p><div class="row2"><button class="btn sec" id="mNo">아니오</button><button class="btn" id="mYes">예</button></div></div></div>
 </div>
 
@@ -858,6 +863,7 @@ function tick(){
     clearInterval(T.iv); $('#timer').style.display='none'; restPopup(T.label);
   }
 }
+function savedPop(){ const p=$('#savePop'); p.classList.remove('hidden'); clearTimeout(savedPop.t); savedPop.t=setTimeout(()=>p.classList.add('hidden'),1000); }
 function restPopup(label){
   const p=$('#restPop'); $('#rpSub').textContent = label && !/마지막/.test(label) ? label : '다음 세트 가요';
   p.classList.remove('hidden'); p.classList.remove('out'); void p.offsetWidth; p.classList.add('in');
@@ -1053,7 +1059,7 @@ function profile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{
 function saveProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
 function bmrHist(){ const P=profile(); let h=Array.isArray(P.bmrHist)?P.bmrHist.slice():[]; if(!h.length && num(P.bmr)) h=[{from:'0000-00-00',v:P.bmr}]; return h.sort((a,b)=>a.from<b.from?-1:1); }
 function bmrFor(date){ const h=bmrHist(); if(!h.length) return 0; let v=h[0].v; h.forEach(x=>{ if(x.from<=date) v=x.v; }); return num(v)||0; }
-S.dsd={};
+S.dsd={}; S.dsb={};
 function draftDiet(date){ if(!S.dsd[date]) S.dsd[date]=JSON.parse(JSON.stringify(dietOf(viewLog(date)))); return S.dsd[date]; }
 function markDiet(){ const b=document.getElementById('saveDiet'); if(b) b.className='btn'; }
 function dietOf(l){ const d=(l&&l.diet)||{}; MEALS.forEach(([k])=>{ if(!Array.isArray(d[k])) d[k]=[]; }); return d; }
@@ -1085,26 +1091,27 @@ function burnOf(l, date){
 }
 const kc=n=>Math.round(n).toLocaleString();
 
+function dietWeek(date){
+  const ws=weekStart(date), td=todayStr(); let h=`<div class="week">`;
+  for(let i=0;i<7;i++){ const d=addDays(ws,i), dd=parse(d), l=S.local[d]||S.logs[d];
+    const k=S.dsd[d]?dietKcal({diet:S.dsd[d]}):(l&&l.diet?dietKcal(l):0);
+    h+=`<button class="wd ${d===date?'sel':''} ${d===td?'today':''} ${dd.getDay()===6?'sat':dd.getDay()===0?'sun':''}" data-act="dtday" data-d="${d}">
+      <span class="w">${DOW[dd.getDay()]}</span><span class="n">${dd.getDate()}</span>
+      <span class="lab kc">${k?kc(k):'&nbsp;'}</span></button>`; }
+  return h+`</div>`;
+}
 function renderDiet(){
-  const date=S.date, l=viewLog(date), d=parse(date), P=profile(), dt=S.dsd[date]||dietOf(l), dirtyD=!!S.dsd[date];
+  const date=S.date, l=viewLog(date), d=parse(date), dt=S.dsd[date]||dietOf(l), dirtyD=!!S.dsd[date];
+  const sb=S.dsb[date]||{bmr:String(bmrFor(date)||''), wt:String((l.diet&&l.diet.wt)||'')}, dirtyB=!!S.dsb[date];
   let h=`<div class="datebar"><button class="icon" data-act="day" data-n="-1">‹</button>
     <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div>
-    <button class="icon" data-act="day" data-n="1">›</button></div>`;
-  // 프로필
-  if(!bmrFor(date) || S.editProfile){
-    const hb=bmrHist(), dd0=parse(date);
-    h+=`<div class="card"><div class="lbl">내 기초대사량</div>
-      <div class="muted" style="font-size:12.5px;margin-bottom:10px;line-height:1.6">인바디에 나온 기초대사량을 넣어 주세요. ${hb.length?`<b style="color:var(--text);font-weight:500">${dd0.getMonth()+1}월 ${dd0.getDate()}일부터</b> 새 값이 적용되고, 그 전 날짜는 예전 값 그대로 계산돼요.`:'체중은 아래 눈바디·체중 칸에 넣으면 운동 소모 칼로리 계산에 쓰여요.'}</div>
-      <div class="unit" data-u="kcal"><input inputmode="numeric" id="pfBmr" placeholder="기초대사량" value="${esc(bmrFor(date)||'')}"></div>
-      <button class="btn" style="width:100%;padding:12px;margin-top:10px" data-act="dtprofile">저장</button>
-      ${hb.length>1||(hb.length&&hb[0].from!=='0000-00-00')?`<div class="muted" style="font-size:12px;margin-top:10px;line-height:1.7">변경 기록: ${hb.map(x=>`${x.from==='0000-00-00'?'처음':x.from.slice(5).replace('-','/')} ${x.v}`).join(' → ')}</div>`:''}</div>`;
-  }
+    <button class="icon" data-act="day" data-n="1">›</button></div>${dietWeek(date)}`;
   // 하루 수지
   const intake=dietKcal({diet:dt}), bmr=bmrFor(date), life=Math.round(bmr*0.2), B=burnOf(l,date), out=bmr+life+B.total, diff=intake-out;
   if(bmr){
     const pct=Math.round(intake/bmr*100);
     h+=`<div class="card kcal">
-      <div class="khead"><div><span class="muted">먹은 칼로리</span><b>${kc(intake)}<small> kcal</small></b></div><button class="ghost sm" data-act="dteditpf">기초대사량 ${kc(bmr)}</button></div>
+      <div class="khead"><div><span class="muted">먹은 칼로리</span><b>${kc(intake)}<small> kcal</small></b></div></div>
       <div class="kbar"><i style="width:${Math.min(100,intake/Math.max(out,1)*100)}%"></i><em style="left:${Math.min(100,bmr/Math.max(out,intake,1)*100)}%"></em></div>
       <div class="muted" style="font-size:12.5px;margin:6px 0 12px">기초대사량의 <b style="color:var(--text)">${pct}%</b>를 먹었어요</div>
       <div class="krow"><span>기초대사량</span><span>${kc(bmr)}</span></div>
@@ -1114,7 +1121,7 @@ function renderDiet(){
       <div class="krow tot"><span>총 소모</span><span>${kc(out)}</span></div>
       <div class="kres ${intake?(diff>0?'plus':'minus'):''}">${intake? (diff>0?`<b>+${kc(diff)} kcal</b> 소모보다 더 먹었어요`:`<b>−${kc(-diff)} kcal</b> 소모보다 덜 먹었어요`) : '먹은 음식을 넣으면 오늘 수지가 나와요'}</div>
     </div>`;
-  }
+  } else h+=`<div class="card"><div class="khead"><div><span class="muted">먹은 칼로리</span><b>${kc(intake)}<small> kcal</small></b></div></div><div class="muted" style="font-size:12.5px;margin-top:6px">아래에 기초대사량을 넣으면 하루 수지가 나와요</div></div>`;
   // 끼니
   MEALS.forEach(([k,name])=>{ const arr=dt[k];
     h+=`<div class="card meal"><div class="mhead"><b>${name}</b><span class="muted">${mealKcal(arr)?kc(mealKcal(arr))+' kcal':''}</span></div>`;
@@ -1123,18 +1130,22 @@ function renderDiet(){
       <button class="x" data-act="dtdel" data-m="${k}" data-i="${i}">×</button></div>
       <div class="sugg hidden" id="sg-${k}-${i}"></div>`; });
     h+=`<button class="ghost addf" data-act="dtadd" data-m="${k}">+ 음식 추가</button></div>`; });
-  h+=`<div class="muted" style="font-size:12px;margin:-4px 4px 14px;line-height:1.6">음식 이름을 치면 자주 먹는 음식의 대략 칼로리가 떠요. 양이 다르면 숫자만 고치면 돼요.</div>`;
-  // 눈바디
-  const ph=(S.photos||[]).filter(p=>p.date===date);
-  h+=`<div class="sec-title">눈바디 · 체중</div><div class="card">
-    <div class="pugrid g2" style="grid-template-columns:1fr auto"><div class="unit" data-u="kg"><input inputmode="decimal" placeholder="오늘 체중" value="${esc(dt.wt||'')}" data-di="wt"></div>
-      <button class="btn sec" data-act="dtphoto" style="padding:0 16px">+ 사진</button></div>
+  h+=`<div class="muted" style="font-size:12px;margin:-4px 4px 10px;line-height:1.6">음식 이름을 치면 자주 먹는 음식의 대략 칼로리가 떠요. 양이 다르면 숫자만 고치면 돼요.</div>
+  <button class="btn ${dirtyD?'':'outline'}" id="saveDiet" style="width:100%;padding:13px;margin:0 0 18px" data-act="dtsave">저장</button>`;
+  // 기초대사량 · 체중 · 눈바디
+  const hb=bmrHist(), ph=(S.photos||[]).filter(p=>p.date===date);
+  h+=`<div class="sec-title">기초대사량 · 체중 · 눈바디</div><div class="card">
+    <div class="pugrid g2"><div class="unit" data-u="kcal"><input inputmode="numeric" placeholder="기초대사량" value="${esc(sb.bmr)}" data-di="bmr"></div>
+      <div class="unit" data-u="kg"><input inputmode="decimal" placeholder="체중" value="${esc(sb.wt)}" data-di="wt"></div></div>
+    <div class="muted" style="font-size:12px;margin-top:8px;line-height:1.6">${hb.length?`기초대사량을 바꾸면 <b style="color:var(--text);font-weight:500">${d.getMonth()+1}월 ${d.getDate()}일부터</b> 새 값이 적용돼요.`:'인바디에 나온 기초대사량을 넣어 주세요.'} 체중은 운동 소모 칼로리 계산에 쓰여요.</div>
+    ${hb.length>1||(hb.length&&hb[0].from!=='0000-00-00')?`<div class="muted" style="font-size:12px;margin-top:4px;line-height:1.7">변경 기록: ${hb.map(x=>`${x.from==='0000-00-00'?'처음':x.from.slice(5).replace('-','/')} ${x.v}`).join(' → ')}</div>`:''}
+    <button class="btn ${dirtyB?'':'outline'}" id="saveBody" style="width:100%;padding:12px;margin-top:12px" data-act="dtbody">저장</button>
+    <div class="lbl" style="margin-top:18px">눈바디</div>
+    <button class="btn sec" data-act="dtphoto" style="width:100%;padding:11px">+ 사진 추가</button>
     <input type="file" id="dtFile" accept="image/*" class="hidden">
-    ${ph.length?`<div class="thumbs">${ph.map(p=>`<img src="${p.data}" data-act="dtview" data-id="${p.id}">`).join('')}</div>`:`<div class="muted" style="font-size:12.5px;margin-top:10px">같은 장소·같은 자세로 찍으면 변화가 잘 보여요</div>`}
+    ${ph.length?`<div class="thumbs">${ph.map(p=>`<img src="${p.data}" data-act="dtview" data-id="${p.id}">`).join('')}</div>`:`<div class="muted" style="font-size:12.5px;margin-top:10px">같은 장소·같은 자세로 찍으면 변화가 잘 보여요. 사진은 올리면 바로 저장돼요.</div>`}
     <button class="ghost" style="width:100%;margin-top:12px" data-act="dtgallery">눈바디 모아보기 ${(S.photos||[]).length?`(${S.photos.length}장)`:''}</button>
-  </div>
-  <button class="btn ${dirtyD?'':'outline'}" id="saveDiet" style="width:100%;padding:13px;margin:4px 0 8px" data-act="dtsave">저장</button>
-  <div class="muted" style="font-size:12px;text-align:center;margin-bottom:14px">${dirtyD?'저장하지 않은 식단·체중이 있어요':'사진은 올리면 바로 저장돼요'}</div>`;
+  </div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1189,12 +1200,13 @@ function viewPhoto(id){
 // 이벤트
 $('#view').addEventListener('click',ev=>{
   const t=ev.target.closest('[data-act]'); if(!t) return; const a=t.dataset.act;
-  if(a==='dtprofile'){ const b=$('#pfBmr').value.replace(/[^0-9]/g,''); if(!b){ toastMsg('기초대사량을 넣어 주세요'); return; }
-    const P=profile(); const first=!bmrHist().length; const from=first?'0000-00-00':S.date; let h=bmrHist().filter(x=>x.from!==from); h.push({from,v:b}); h.sort((x,y)=>x.from<y.from?-1:1);
-    const latest=h[h.length-1].v; saveProfile({...P, bmr:latest, bmrHist:h, }); S.editProfile=false; render();
-    const d0=parse(S.date); toastMsg(first?'저장했어요':`${d0.getMonth()+1}/${d0.getDate()}부터 ${b}kcal로 계산해요`); }
+  if(a==='dtday'){ S.date=t.dataset.d; render(); return; }
+  if(a==='dtbody'){ const sb=S.dsb[S.date]; if(!sb){ savedPop(); return; }
+    const b=(sb.bmr||'').replace(/[^0-9]/g,''), w=(sb.wt||'').replace(/[^0-9.]/g,'');
+    if(b && +b!==bmrFor(S.date)){ const P=profile(); const first=!bmrHist().length; const from=first?'0000-00-00':S.date; let h=bmrHist().filter(x=>x.from!==from); h.push({from,v:b}); h.sort((x,y)=>x.from<y.from?-1:1); saveProfile({...P, bmr:h[h.length-1].v, bmrHist:h}); }
+    const l=ensureLog(S.date); l.diet=dietOf(l); l.diet.wt=w; touch(S.date); delete S.dsb[S.date]; render(); savedPop(); return; }
   else if(a==='dteditpf'){ S.editProfile=true; render(); }
-  else if(a==='dtsave'){ const d=S.dsd[S.date]; if(!d) return; const l=ensureLog(S.date); l.diet=JSON.parse(JSON.stringify(d)); MEALS.forEach(([k])=>{ l.diet[k]=l.diet[k].filter(x=>(x.n||'').trim()||num(x.k)); }); delete S.dsd[S.date]; touch(S.date); render(); toastMsg('식단을 저장했어요'); }
+  else if(a==='dtsave'){ const d=S.dsd[S.date]; if(!d){ savedPop(); return; } const l=ensureLog(S.date); const wt=l.diet&&l.diet.wt; l.diet=JSON.parse(JSON.stringify(d)); l.diet.wt=wt||''; MEALS.forEach(([k])=>{ l.diet[k]=l.diet[k].filter(x=>(x.n||'').trim()||num(x.k)); }); delete S.dsd[S.date]; touch(S.date); render(); savedPop(); }
   else if(a==='dtadd'){ const dd=draftDiet(S.date); dd[t.dataset.m].push({n:'',k:''}); render();
     const ins=document.querySelectorAll(`[data-di=fn][data-m="${t.dataset.m}"]`); if(ins.length) ins[ins.length-1].focus(); }
   else if(a==='dtdel'){ const dd=draftDiet(S.date); dd[t.dataset.m].splice(+t.dataset.i,1); render(); }
@@ -1209,8 +1221,9 @@ $('#view').addEventListener('change',async ev=>{
   catch(e){ toastMsg('사진을 저장하지 못했어요'); }
 });
 $('#view').addEventListener('input',ev=>{
-  const t=ev.target, k=t.dataset.di; if(!k) return; const dd=draftDiet(S.date); markDiet();
-  if(k==='wt'){ dd.wt=t.value.replace(/[^0-9.]/g,''); return; }
+  const t=ev.target, k=t.dataset.di; if(!k) return;
+  if(k==='wt'||k==='bmr'){ const l=viewLog(S.date); if(!S.dsb[S.date]) S.dsb[S.date]={bmr:String(bmrFor(S.date)||''), wt:String((l.diet&&l.diet.wt)||'')}; S.dsb[S.date][k]=t.value; const b=document.getElementById('saveBody'); if(b) b.className='btn'; return; }
+  const dd=draftDiet(S.date); markDiet();
   const x=dd[t.dataset.m][+t.dataset.i];
   if(k==='fk'){ x.k=t.value.replace(/[^0-9]/g,''); updateKcalLive(); return; }
   if(k==='fn'){ x.n=t.value;
