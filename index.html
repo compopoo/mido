@@ -656,7 +656,7 @@ function claudeText(days){
   const from = addDays(todayStr(),-(days-1));
   const logs = allLogs().filter(l=>l.date>=from && hasContent(l));
   if(!logs.length) return '';
-  const pf=profile(); let t = `[운동일지 기록 ${from} ~ ${todayStr()}]${num(pf.bmr)?` (기초대사량 ${pf.bmr}kcal${num(pf.weight)?`, 체중 ${pf.weight}kg`:''})`:''}\n운동 기록이야. 17년 연구 기준(각 부위 주 2회, 고중량, 풀 가동범위, 주당 10~20세트, 중요한 운동 먼저)으로 봐 주고, 잘한 점 / 고칠 점 / 다음 주 바꿀 것을 알려줘.\n`;
+  const pf=profile(); let t = `[운동일지 기록 ${from} ~ ${todayStr()}]${num(pf.bmr)?` (기초대사량 ${pf.bmr}kcal${weightFor(todayStr())?`, 체중 ${weightFor(todayStr())}kg`:''})`:''}\n운동 기록이야. 17년 연구 기준(각 부위 주 2회, 고중량, 풀 가동범위, 주당 10~20세트, 중요한 운동 먼저)으로 봐 주고, 잘한 점 / 고칠 점 / 다음 주 바꿀 것을 알려줘.\n`;
   logs.forEach(l=>{ const d=parse(l.date);
     t += `\n${l.date}(${DOW[d.getDay()]}) ${titleOf(l)}${l.finishedAt?` · 운동 시간 ${durText(l)}`:''}\n`;
     (saved(l)?l.exercises:[]).filter(e=>e.sets.some(s=>s.done)).forEach(e=>{
@@ -1035,11 +1035,11 @@ function dietOf(l){ const d=(l&&l.diet)||{}; MEALS.forEach(([k])=>{ if(!Array.is
 function mealKcal(arr){ return arr.reduce((a,x)=>a+(num(x.k)||0),0); }
 function dietKcal(l){ const d=dietOf(l); return MEALS.reduce((a,[k])=>a+mealKcal(d[k]),0); }
 function hasDiet(l){ const d=l&&l.diet; if(!d) return false; return MEALS.some(([k])=>Array.isArray(d[k])&&d[k].some(x=>(x.n||'').trim()||num(x.k))) || !!num(d.wt); }
-function weightFor(date){ // 그날 또는 그 이전 가장 최근 체중
-  const ds=Object.keys(S.logs).filter(k=>k<=date && num(S.logs[k].diet&&S.logs[k].diet.wt)).sort();
-  const loc=S.local[date]; if(loc && num(loc.diet&&loc.diet.wt)) return num(loc.diet.wt);
-  if(ds.length) return num(S.logs[ds[ds.length-1]].diet.wt);
-  return num(profile().weight)||0;
+function weightFor(date){ // 그날 또는 그 이전에 가장 최근 입력한 체중 (없으면 처음 입력한 체중)
+  const w={}; Object.keys(S.logs).forEach(k=>{ const v=num(S.logs[k].diet&&S.logs[k].diet.wt); if(v) w[k]=v; });
+  Object.keys(S.local).forEach(k=>{ const L=S.local[k]; if(L&&L.diet&&'wt' in L.diet){ const v=num(L.diet.wt); if(v) w[k]=v; else delete w[k]; } });
+  const ks=Object.keys(w).sort(); if(!ks.length) return num(profile().weight)||0;
+  const before=ks.filter(k=>k<=date); return w[before.length?before[before.length-1]:ks[0]];
 }
 // 운동 소모 칼로리 (대략)
 function burnOf(l, date){
@@ -1068,10 +1068,9 @@ function renderDiet(){
   // 프로필
   if(!bmrFor(date) || S.editProfile){
     const hb=bmrHist(), dd0=parse(date);
-    h+=`<div class="card"><div class="lbl">내 기초대사량과 체중</div>
-      <div class="muted" style="font-size:12.5px;margin-bottom:10px;line-height:1.6">인바디에 나온 기초대사량을 넣어 주세요. ${hb.length?`<b style="color:var(--text);font-weight:500">${dd0.getMonth()+1}월 ${dd0.getDate()}일부터</b> 새 값이 적용되고, 그 전 날짜는 예전 값 그대로 계산돼요.`:'체중은 운동 소모 칼로리 계산에 쓰여요.'}</div>
-      <div class="pugrid g2"><div class="unit" data-u="kcal"><input inputmode="numeric" id="pfBmr" placeholder="기초대사량" value="${esc(bmrFor(date)||'')}"></div>
-      <div class="unit" data-u="kg"><input inputmode="decimal" id="pfWt" placeholder="체중" value="${esc(P.weight||'')}"></div></div>
+    h+=`<div class="card"><div class="lbl">내 기초대사량</div>
+      <div class="muted" style="font-size:12.5px;margin-bottom:10px;line-height:1.6">인바디에 나온 기초대사량을 넣어 주세요. ${hb.length?`<b style="color:var(--text);font-weight:500">${dd0.getMonth()+1}월 ${dd0.getDate()}일부터</b> 새 값이 적용되고, 그 전 날짜는 예전 값 그대로 계산돼요.`:'체중은 아래 눈바디·체중 칸에 넣으면 운동 소모 칼로리 계산에 쓰여요.'}</div>
+      <div class="unit" data-u="kcal"><input inputmode="numeric" id="pfBmr" placeholder="기초대사량" value="${esc(bmrFor(date)||'')}"></div>
       <button class="btn" style="width:100%;padding:12px;margin-top:10px" data-act="dtprofile">저장</button>
       ${hb.length>1||(hb.length&&hb[0].from!=='0000-00-00')?`<div class="muted" style="font-size:12px;margin-top:10px;line-height:1.7">변경 기록: ${hb.map(x=>`${x.from==='0000-00-00'?'처음':x.from.slice(5).replace('-','/')} ${x.v}`).join(' → ')}</div>`:''}</div>`;
   }
@@ -1085,7 +1084,7 @@ function renderDiet(){
       <div class="muted" style="font-size:12.5px;margin:6px 0 12px">기초대사량의 <b style="color:var(--text)">${pct}%</b>를 먹었어요</div>
       <div class="krow"><span>기초대사량</span><span>${kc(bmr)}</span></div>
       <div class="krow"><span>일상 활동 <small>(기초대사량의 20%)</small></span><span>${kc(life)}</span></div>
-      <div class="krow"><span>운동 소모 <small>(대략)</small></span><span>${kc(B.total)}</span></div>
+      <div class="krow"><span>운동 소모 <small>(${weightFor(date)?`체중 ${weightFor(date)}kg 기준`:'체중 넣으면 더 정확해요'})</small></span><span>${kc(B.total)}</span></div>
       ${B.total?`<div class="ksub">${[B.weights?`근력 ${kc(B.weights)}`:'',B.cardio?`유산소 ${kc(B.cardio)}`:'',B.run?`러닝 ${kc(B.run)}`:'',B.body?`푸쉬업·풀업 ${kc(B.body)}`:''].filter(Boolean).join(' · ')}</div>`:''}
       <div class="krow tot"><span>총 소모</span><span>${kc(out)}</span></div>
       <div class="kres ${intake?(diff>0?'plus':'minus'):''}">${intake? (diff>0?`<b>+${kc(diff)} kcal</b> 소모보다 더 먹었어요`:`<b>−${kc(-diff)} kcal</b> 소모보다 덜 먹었어요`) : '먹은 음식을 넣으면 오늘 수지가 나와요'}</div>
@@ -1163,9 +1162,9 @@ function viewPhoto(id){
 // 이벤트
 $('#view').addEventListener('click',ev=>{
   const t=ev.target.closest('[data-act]'); if(!t) return; const a=t.dataset.act;
-  if(a==='dtprofile'){ const b=$('#pfBmr').value.replace(/[^0-9]/g,''), w=$('#pfWt').value.replace(/[^0-9.]/g,''); if(!b){ toastMsg('기초대사량을 넣어 주세요'); return; }
+  if(a==='dtprofile'){ const b=$('#pfBmr').value.replace(/[^0-9]/g,''); if(!b){ toastMsg('기초대사량을 넣어 주세요'); return; }
     const P=profile(); const first=!bmrHist().length; const from=first?'0000-00-00':S.date; let h=bmrHist().filter(x=>x.from!==from); h.push({from,v:b}); h.sort((x,y)=>x.from<y.from?-1:1);
-    const latest=h[h.length-1].v; saveProfile({...P, bmr:latest, bmrHist:h, weight:w||P.weight}); S.editProfile=false; render();
+    const latest=h[h.length-1].v; saveProfile({...P, bmr:latest, bmrHist:h, }); S.editProfile=false; render();
     const d0=parse(S.date); toastMsg(first?'저장했어요':`${d0.getMonth()+1}/${d0.getDate()}부터 ${b}kcal로 계산해요`); }
   else if(a==='dteditpf'){ S.editProfile=true; render(); }
   else if(a==='dtadd'){ const l=ensureLog(S.date); l.diet=dietOf(l); l.diet[t.dataset.m].push({n:'',k:''}); touch(S.date); render();
