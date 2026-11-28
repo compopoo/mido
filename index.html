@@ -754,7 +754,7 @@ async function copyText(text, fallbackEl){
   catch(e){ if(fallbackEl){ fallbackEl.value=text; fallbackEl.classList.remove('hidden'); fallbackEl.focus(); fallbackEl.select(); } toast('아래 글을 길게 눌러 복사하세요'); return false; }
 }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2600); }
-const APP_VER='v80';
+const APP_VER='v81';
 function renderMore(){
   const n=Object.keys(S.logs).length;
   let last=''; try{ last=localStorage.getItem('setlog.lastBackup')||''; }catch(e){}
@@ -1348,20 +1348,35 @@ $('#view').addEventListener('pointerdown',e=>{ if(e.target.closest('.sugg')) e.p
 /* ---------- 시작 ---------- */
 try{ S.logs=JSON.parse(lsGet()||'{}')||{}; }catch(e){ S.logs={}; }
 try{ S.my=JSON.parse(localStorage.getItem('setlog.my')||'null'); }catch(e){ S.my=null; }
+try{ const rs=JSON.parse(sessionStorage.getItem('setlog.resume')||'null'); if(rs){ sessionStorage.removeItem('setlog.resume'); if(rs.tab) S.tab=rs.tab; if(rs.date) S.date=rs.date; setTimeout(()=>scrollTo(0,rs.y||0),50); } }catch(e){}
 S.photos=[]; loadPhotos().then(()=>{ if(S.tab==='diet') render(); });
 setSync('','');
 render();
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})); }
-// 새 버전 확인: 앱을 열거나 다시 볼 때 서버 버전과 비교해서 알려줌
-async function checkUpdate(){
-  if(!location.protocol.startsWith('http') || document.getElementById('updBar')) return;
-  try{ const t=await (await fetch('index.html?v='+Date.now(),{cache:'no-store'})).text(); const m=t.match(/const APP_VER='(v\d+)'/);
-    if(m && m[1]!==APP_VER){ const b=document.createElement('div'); b.id='updBar'; b.className='updbar';
-      b.innerHTML=`<span>새 버전(${m[1]})이 있어요</span><button class="btn">업데이트</button>`;
-      b.querySelector('button').onclick=async()=>{ try{ const r=await navigator.serviceWorker.getRegistration(); if(r) await r.update(); }catch(e){} location.reload(); };
-      document.body.appendChild(b); } }catch(e){}
+// 새 버전 확인: 새 버전이 있으면, 입력 중이 아닐 때 조용히 적용
+let updPending=false;
+function safeToReload(){
+  if(Object.keys(S.dd).some(dailyDirty) || Object.keys(S.dsd).some(dietDirty) || Object.keys(S.dsb).some(bodyDirty)) return false;
+  if(T.end>Date.now() && $('#timer').style.display!=='none') return false;
+  if(document.querySelector('.sheet:not(.hidden)') || !$('#modal').classList.contains('hidden') || document.querySelector('.pview')) return false;
+  const ae=document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return false;
+  return true;
 }
+function applyUpdate(){
+  Object.keys(S.local).forEach(d=>{ clearTimeout(saveTimers[d]); flush(d); });
+  try{ sessionStorage.setItem('setlog.resume',JSON.stringify({tab:S.tab,date:S.date,y:scrollY})); }catch(e){}
+  navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}).finally(()=>location.reload());
+}
+async function checkUpdate(){
+  if(!location.protocol.startsWith('http')) return;
+  if(!updPending){
+    try{ const t=await (await fetch('index.html?v='+Date.now(),{cache:'no-store'})).text(); const m=t.match(/const APP_VER='(v\d+)'/);
+      if(m && m[1]!==APP_VER) updPending=true; }catch(e){}
+  }
+  if(updPending && document.visibilityState==='visible' && safeToReload()) applyUpdate();
+}
+setInterval(()=>{ if(updPending) checkUpdate(); },20000);
 window.addEventListener('load',()=>setTimeout(checkUpdate,1500));
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkUpdate(); });
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') for(const k in saveTimers){ clearTimeout(saveTimers[k]); flush(k); } });
