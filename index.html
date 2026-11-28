@@ -194,6 +194,7 @@
   .day .dhead{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
   .dline{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
   .dline b{display:block;font-weight:500} .dline span{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--sub)}
+  .dsum{padding:10px 0 4px} .dsub{font-size:12px;color:var(--dim);margin:14px 0 2px;letter-spacing:.02em} .dline em.dk{font-style:normal;font-weight:400;color:var(--sub);font-size:12.5px;margin-left:6px}
   .dline small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
   .ctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
   .ctrl .btn{padding:11px;font-size:13.5px;color:var(--sub)}
@@ -590,7 +591,28 @@ function dayDetail(ds, l){
     if(num(runOf(l).km)) h+=`<div class="dline"><b>러닝</b><span>${esc(runSummary(runOf(l)).replace('러닝 ',''))}</span></div>`;
     if(push.length) h+=`<div class="dline"><b>푸쉬업</b><span>${push.join(' / ')}</span></div>`;
     if(puS) h+=`<div class="dline"><b>풀업</b><span>${esc(puS)}</span></div>`;
-    if(l && hasDiet(l)) h+=`<div class="dline"><b>식단</b><span>${dietKcal(l)?`${kc(dietKcal(l))} kcal`:''}${num(l.diet.wt)?` · 체중 ${l.diet.wt}kg`:''}</span></div>`;
+    // 운동 소모
+    const B=burnOf(l?(saved(l)?l:{...l,exercises:[]}):null, ds);
+    if(B.total) h+=`<div class="dsum"><div class="krow tot"><span>운동 소모 칼로리 <small>(대략)</small></span><span>${kc(B.total)} kcal</span></div>
+      <div class="ksub">${[B.weights?`근력 ${kc(B.weights)}`:'',B.cardio?`유산소 ${kc(B.cardio)}`:'',B.run?`러닝 ${kc(B.run)}`:'',B.body?`푸쉬업·풀업 ${kc(B.body)}`:''].filter(Boolean).join(' · ')} · 체중 ${B.wt}kg 기준</div></div>`;
+    // 식사
+    if(l && hasDiet(l)){ const dt=dietOf(l);
+      h+=`<div class="dsub">식사</div>`;
+      MEALS.forEach(([k,n])=>{ const it=dt[k].filter(x=>(x.n||'').trim()||num(x.k)); if(!it.length) return;
+        h+=`<div class="dline"><b>${n} <em class="dk">${kc(mealKcal(dt[k]))} kcal</em></b><span>${it.map(x=>`${esc((x.n||'').trim()||'음식')}${num(x.k)?` ${x.k}`:''}`).join(' · ')}</span></div>`; });
+      if(num(dt.wt)) h+=`<div class="dline"><b>체중</b><span>${dt.wt}kg</span></div>`;
+    }
+    // 종합
+    const bmr=bmrFor(ds), intake=l?dietKcal(l):0;
+    if(bmr && (intake || B.total)){ const life=Math.round(bmr*0.2), out=bmr+life+B.total, diff=intake-out;
+      h+=`<div class="dsub">하루 종합</div><div class="dsum">
+        <div class="krow"><span>기초대사량</span><span>${kc(bmr)}</span></div>
+        <div class="krow"><span>일상 활동 <small>(20%)</small></span><span>${kc(life)}</span></div>
+        <div class="krow"><span>운동 소모</span><span>${kc(B.total)}</span></div>
+        <div class="krow tot"><span>총 소모</span><span>${kc(out)}</span></div>
+        <div class="krow"><span>먹은 칼로리</span><span>${kc(intake)}</span></div>
+        <div class="kres ${intake?(diff>0?'plus':'minus'):''}">${intake?(diff>0?`<b>+${kc(diff)} kcal</b> 소모보다 더 먹었어요`:`<b>−${kc(-diff)} kcal</b> 소모보다 덜 먹었어요`):'식사를 넣으면 하루 수지가 나와요'}</div></div>`;
+    } else if(!bmr && (intake||B.total)) h+=`<div class="muted" style="font-size:12.5px;margin-top:10px">식단 탭에서 기초대사량을 넣으면 하루 종합이 나와요</div>`;
   }
   h+=`<button class="ghost" style="width:100%;margin-top:10px" data-act="open" data-d="${ds}">${l&&l.exercises.length?'이 날 기록 열기 / 수정':'이 날 운동 기록하기'}</button></div>`;
   return h;
