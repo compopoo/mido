@@ -664,7 +664,7 @@ function claudeText(days){
     const p=l.daily.push.filter(v=>v!==''); if(p.length) t+=`- 푸시업: ${p.join('/')}\n`;
     { const ps=puSummary(l.date,l.daily.pullup); if(ps) t+=`- 풀업: ${ps}\n`; }
     if(num(runOf(l).km)) t+=`- ${runSummary(runOf(l))}\n`;
-    if(hasDiet(l)){ const dd=dietOf(l); t+=`- 식단 ${kc(dietKcal(l))}kcal: ${MEALS.map(([k,n])=>dd[k].filter(x=>(x.n||'').trim()).length?`${n} ${dd[k].filter(x=>(x.n||'').trim()).map(x=>`${x.n}${num(x.k)?`(${x.k})`:''}`).join(', ')}`:'').filter(Boolean).join(' / ')}${num(dd.wt)?` · 체중 ${dd.wt}kg`:''}\n`; const B=burnOf(l,l.date); if(B.total) t+=`- 운동 소모 추정 ${kc(B.total)}kcal\n`; }
+    if(hasDiet(l)){ const dd=dietOf(l); t+=`- 식단 ${kc(dietKcal(l))}kcal: ${MEALS.map(([k,n])=>dd[k].filter(x=>(x.n||'').trim()).length?`${n} ${dd[k].filter(x=>(x.n||'').trim()).map(x=>`${x.n}${num(x.k)?`(${x.k})`:''}`).join(', ')}`:'').filter(Boolean).join(' / ')}${num(dd.wt)?` · 체중 ${dd.wt}kg`:''}\n`; const B=burnOf(l,l.date); if(B.total) t+=`- 운동 소모 추정 ${kc(B.total)}kcal\n`; if(bmrFor(l.date)) t+=`- 기초대사량 ${bmrFor(l.date)}kcal 기준\n`; }
     if((l.memo||'').trim()) t+=`- 메모: ${l.memo.trim()}\n`;
   });
   return t;
@@ -1029,6 +1029,8 @@ const FOODS=[
 const PROFILE_KEY='setlog.profile';
 function profile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')||{}; }catch(e){ return {}; } }
 function saveProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
+function bmrHist(){ const P=profile(); let h=Array.isArray(P.bmrHist)?P.bmrHist.slice():[]; if(!h.length && num(P.bmr)) h=[{from:'0000-00-00',v:P.bmr}]; return h.sort((a,b)=>a.from<b.from?-1:1); }
+function bmrFor(date){ const h=bmrHist(); if(!h.length) return 0; let v=h[0].v; h.forEach(x=>{ if(x.from<=date) v=x.v; }); return num(v)||0; }
 function dietOf(l){ const d=(l&&l.diet)||{}; MEALS.forEach(([k])=>{ if(!Array.isArray(d[k])) d[k]=[]; }); return d; }
 function mealKcal(arr){ return arr.reduce((a,x)=>a+(num(x.k)||0),0); }
 function dietKcal(l){ const d=dietOf(l); return MEALS.reduce((a,[k])=>a+mealKcal(d[k]),0); }
@@ -1064,15 +1066,17 @@ function renderDiet(){
     <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div>
     <button class="icon" data-act="day" data-n="1">›</button></div>`;
   // 프로필
-  if(!num(P.bmr) || S.editProfile){
+  if(!bmrFor(date) || S.editProfile){
+    const hb=bmrHist(), dd0=parse(date);
     h+=`<div class="card"><div class="lbl">내 기초대사량과 체중</div>
-      <div class="muted" style="font-size:12.5px;margin-bottom:10px;line-height:1.6">인바디에 나온 기초대사량을 넣어 주세요. 체중은 운동 소모 칼로리 계산에 쓰여요.</div>
-      <div class="pugrid g2"><div class="unit" data-u="kcal"><input inputmode="numeric" id="pfBmr" placeholder="기초대사량" value="${esc(P.bmr||'')}"></div>
+      <div class="muted" style="font-size:12.5px;margin-bottom:10px;line-height:1.6">인바디에 나온 기초대사량을 넣어 주세요. ${hb.length?`<b style="color:var(--text);font-weight:500">${dd0.getMonth()+1}월 ${dd0.getDate()}일부터</b> 새 값이 적용되고, 그 전 날짜는 예전 값 그대로 계산돼요.`:'체중은 운동 소모 칼로리 계산에 쓰여요.'}</div>
+      <div class="pugrid g2"><div class="unit" data-u="kcal"><input inputmode="numeric" id="pfBmr" placeholder="기초대사량" value="${esc(bmrFor(date)||'')}"></div>
       <div class="unit" data-u="kg"><input inputmode="decimal" id="pfWt" placeholder="체중" value="${esc(P.weight||'')}"></div></div>
-      <button class="btn" style="width:100%;padding:12px;margin-top:10px" data-act="dtprofile">저장</button></div>`;
+      <button class="btn" style="width:100%;padding:12px;margin-top:10px" data-act="dtprofile">저장</button>
+      ${hb.length>1||(hb.length&&hb[0].from!=='0000-00-00')?`<div class="muted" style="font-size:12px;margin-top:10px;line-height:1.7">변경 기록: ${hb.map(x=>`${x.from==='0000-00-00'?'처음':x.from.slice(5).replace('-','/')} ${x.v}`).join(' → ')}</div>`:''}</div>`;
   }
   // 하루 수지
-  const intake=dietKcal(l), bmr=num(P.bmr)||0, life=Math.round(bmr*0.2), B=burnOf(l,date), out=bmr+life+B.total, diff=intake-out;
+  const intake=dietKcal(l), bmr=bmrFor(date), life=Math.round(bmr*0.2), B=burnOf(l,date), out=bmr+life+B.total, diff=intake-out;
   if(bmr){
     const pct=Math.round(intake/bmr*100);
     h+=`<div class="card kcal">
@@ -1160,7 +1164,9 @@ function viewPhoto(id){
 $('#view').addEventListener('click',ev=>{
   const t=ev.target.closest('[data-act]'); if(!t) return; const a=t.dataset.act;
   if(a==='dtprofile'){ const b=$('#pfBmr').value.replace(/[^0-9]/g,''), w=$('#pfWt').value.replace(/[^0-9.]/g,''); if(!b){ toastMsg('기초대사량을 넣어 주세요'); return; }
-    saveProfile({...profile(), bmr:b, weight:w}); S.editProfile=false; render(); toastMsg('저장했어요'); }
+    const P=profile(); const first=!bmrHist().length; const from=first?'0000-00-00':S.date; let h=bmrHist().filter(x=>x.from!==from); h.push({from,v:b}); h.sort((x,y)=>x.from<y.from?-1:1);
+    const latest=h[h.length-1].v; saveProfile({...P, bmr:latest, bmrHist:h, weight:w||P.weight}); S.editProfile=false; render();
+    const d0=parse(S.date); toastMsg(first?'저장했어요':`${d0.getMonth()+1}/${d0.getDate()}부터 ${b}kcal로 계산해요`); }
   else if(a==='dteditpf'){ S.editProfile=true; render(); }
   else if(a==='dtadd'){ const l=ensureLog(S.date); l.diet=dietOf(l); l.diet[t.dataset.m].push({n:'',k:''}); touch(S.date); render();
     const ins=document.querySelectorAll(`[data-di=fn][data-m="${t.dataset.m}"]`); if(ins.length) ins[ins.length-1].focus(); }
