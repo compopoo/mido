@@ -349,7 +349,14 @@ function ask(title, text, danger){
   });
 }
 function draftDaily(date){ if(!S.dd[date]){ const l=getLog(date); const b=(l&&l.daily)||{}; S.dd[date]={push:(b.push||['','','']).slice(),pullup:JSON.parse(JSON.stringify(puObj(b.pullup))),run:{km:'',min:'',sec:'',...(b.run||{})}}; } return S.dd[date]; }
-function markDaily(){ const b=document.getElementById('saveDaily'); if(b){ b.className='btn'; } }
+// 저장 버튼: 마지막 저장과 다를 때만 색 채움
+function normV(v){ if(v==null) return ''; if(Array.isArray(v)){ const a=v.map(normV); while(a.length && a[a.length-1]==='') a.pop(); return a.length?a:''; }
+  if(typeof v==='object'){ const o={}; Object.keys(v).sort().forEach(k=>{ const x=normV(v[k]); if(x!=='') o[k]=x; }); return Object.keys(o).length?o:''; }
+  return String(v).trim(); }
+const sameV=(a,b)=>JSON.stringify(normV(a))===JSON.stringify(normV(b));
+function dailyDirty(date){ const d=S.dd[date]; if(!d) return false; const l=getLog(date); return !sameV(d,(l&&l.daily)||{}); }
+function setBtn(id,on){ const b=document.getElementById(id); if(b) b.className=on?'btn':'btn outline'; }
+function markDaily(){ setBtn('saveDaily', dailyDirty(S.date)); }
 function saved(l){ return !!(l && l.finishedAt && doneSets(l)>0); }
 function dailyOf(l,date){ return S.dd[date] || (l&&l.daily) || {push:['','',''],pullup:{},run:{km:'',min:'',sec:''}}; }
 const PU_DAYS={1:'mon',2:'tue',3:'wed',4:'thu'};
@@ -498,7 +505,7 @@ ${weekStrip(date)}${l.finishedAt?`<div class="card finished top"><span>오늘 �
         ? `<div class="card finished"><b>운동 완료 · 총 ${durText(l)}</b><button class="ghost" data-act="unfinish">이어서 하기</button></div>`
         : `<div class="savenote">운동 완료를 눌러야 달력·통계에 저장돼요</div><button class="btn" style="width:100%;padding:15px;font-size:16px;margin-bottom:12px" data-act="finish">운동 완료</button>`}`;
   }
-  const dv=dailyOf(l,date), dr=dv.run||{km:'',min:'',sec:''}, dirty=!!S.dd[date];
+  const dv=dailyOf(l,date), dr=dv.run||{km:'',min:'',sec:''}, dirty=dailyDirty(date);
   h += `<div class="sec-title">매일 루틴</div><div class="card">
     <div class="lbl">러닝</div>
     <div class="runrow"><div class="unit" data-u="km"><input inputmode="decimal" placeholder="거리" value="${esc(dr.km)}" data-in="run" data-f="km"></div>
@@ -1061,7 +1068,10 @@ function bmrHist(){ const P=profile(); let h=Array.isArray(P.bmrHist)?P.bmrHist.
 function bmrFor(date){ const h=bmrHist(); if(!h.length) return 0; let v=h[0].v; h.forEach(x=>{ if(x.from<=date) v=x.v; }); return num(v)||0; }
 S.dsd={}; S.dsb={};
 function draftDiet(date){ if(!S.dsd[date]) S.dsd[date]=JSON.parse(JSON.stringify(dietOf(viewLog(date)))); return S.dsd[date]; }
-function markDiet(){ const b=document.getElementById('saveDiet'); if(b) b.className='btn'; }
+function mealsOnly(d){ const o={}; MEALS.forEach(([k])=>{ o[k]=((d&&d[k])||[]).filter(x=>(x.n||'').trim()||num(x.k)).map(x=>({n:(x.n||'').trim(),k:String(x.k||'')})); }); return o; }
+function dietDirty(date){ const d=S.dsd[date]; if(!d) return false; const l=getLog(date); return !sameV(mealsOnly(d),mealsOnly(l&&l.diet)); }
+function bodyDirty(date){ const b=S.dsb[date]; if(!b) return false; const l=getLog(date); return !sameV({bmr:(b.bmr||'').replace(/[^0-9]/g,''),wt:(b.wt||'').replace(/[^0-9.]/g,'')},{bmr:String(bmrFor(date)||''),wt:String((l&&l.diet&&l.diet.wt)||'')}); }
+function markDiet(){ setBtn('saveDiet', dietDirty(S.date)); }
 function dietOf(l){ const d=(l&&l.diet)||{}; MEALS.forEach(([k])=>{ if(!Array.isArray(d[k])) d[k]=[]; }); return d; }
 function mealKcal(arr){ return arr.reduce((a,x)=>a+(num(x.k)||0),0); }
 function dietKcal(l){ const d=dietOf(l); return MEALS.reduce((a,[k])=>a+mealKcal(d[k]),0); }
@@ -1101,8 +1111,8 @@ function dietWeek(date){
   return h+`</div>`;
 }
 function renderDiet(){
-  const date=S.date, l=viewLog(date), d=parse(date), dt=S.dsd[date]||dietOf(l), dirtyD=!!S.dsd[date];
-  const sb=S.dsb[date]||{bmr:String(bmrFor(date)||''), wt:String((l.diet&&l.diet.wt)||'')}, dirtyB=!!S.dsb[date];
+  const date=S.date, l=viewLog(date), d=parse(date), dt=S.dsd[date]||dietOf(l), dirtyD=dietDirty(date);
+  const sb=S.dsb[date]||{bmr:String(bmrFor(date)||''), wt:String((l.diet&&l.diet.wt)||'')}, dirtyB=bodyDirty(date);
   let h=`<div class="datebar"><button class="icon" data-act="day" data-n="-1">‹</button>
     <div class="d">${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</div>
     <button class="icon" data-act="day" data-n="1">›</button></div>${dietWeek(date)}`;
@@ -1222,11 +1232,11 @@ $('#view').addEventListener('change',async ev=>{
 });
 $('#view').addEventListener('input',ev=>{
   const t=ev.target, k=t.dataset.di; if(!k) return;
-  if(k==='wt'||k==='bmr'){ const l=viewLog(S.date); if(!S.dsb[S.date]) S.dsb[S.date]={bmr:String(bmrFor(S.date)||''), wt:String((l.diet&&l.diet.wt)||'')}; S.dsb[S.date][k]=t.value; const b=document.getElementById('saveBody'); if(b) b.className='btn'; return; }
-  const dd=draftDiet(S.date); markDiet();
+  if(k==='wt'||k==='bmr'){ const l=viewLog(S.date); if(!S.dsb[S.date]) S.dsb[S.date]={bmr:String(bmrFor(S.date)||''), wt:String((l.diet&&l.diet.wt)||'')}; S.dsb[S.date][k]=t.value; setBtn('saveBody', bodyDirty(S.date)); return; }
+  const dd=draftDiet(S.date);
   const x=dd[t.dataset.m][+t.dataset.i];
-  if(k==='fk'){ x.k=t.value.replace(/[^0-9]/g,''); updateKcalLive(); return; }
-  if(k==='fn'){ x.n=t.value;
+  if(k==='fk'){ x.k=t.value.replace(/[^0-9]/g,''); markDiet(); updateKcalLive(); return; }
+  if(k==='fn'){ x.n=t.value; markDiet();
     const sg=document.getElementById(`sg-${t.dataset.m}-${t.dataset.i}`); const q=t.value.replace(/\s/g,'');
     if(!sg) return; if(q.length<1){ sg.classList.add('hidden'); return; }
     const hits=FOODS.filter(([n])=>n.replace(/\s/g,'').includes(q)).slice(0,6);
