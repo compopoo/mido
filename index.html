@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f4f6f9">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="only dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,7 +16,7 @@
 <title>악어일지</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-  :root{color-scheme:light dark;
+  :root{color-scheme:only dark;
     --bg:#f4f6f9; --card:rgba(255,255,255,.8); --card2:#eef1f5; --line:#e2e6ec;
     --text:#1b1f27; --sub:#5b6472; --dim:#939aa6;
     --acc:#2563eb; --acc2:#3b82f6; --ok:#16a34a; --warn:#d97706; --bad:#e5484d;
@@ -26,6 +26,7 @@
   html[data-page=today]{--tc:#16a34a;--wave:#6fd39a;--line:#b9e5c9;--tint:#aee3c2} html[data-page=diet]{--tc:#e8456b;--wave:#ff8fa3;--line:#ffc9d2;--tint:#ffbfcb} html[data-page=history]{--tc:#2563eb;--wave:#7aa7ff;--line:#c7d9ff;--tint:#b9d0ff} html[data-page=stats]{--tc:#7c4dff;--wave:#a996ff;--line:#d6ccff;--tint:#cfc3ff} html[data-page=ex]{--tc:#f08a1c;--wave:#ffb562;--line:#ffd9a8;--tint:#ffd49c}
   html,body{margin:0;background:var(--bg);forced-color-adjust:none;color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px}
   button,input,select,textarea{font:inherit;color:inherit}
+  ::placeholder{color:#9aa1ad;opacity:1} select option{background:#fff;color:#1b1f27}
   .deco{position:absolute;top:0;left:0;right:0;height:85vh;min-height:520px;pointer-events:none;z-index:0;background:radial-gradient(ellipse 150% 100% at 0% 0%, var(--wave,#7aa7ff) 0%, color-mix(in srgb, var(--wave,#7aa7ff) 45%, transparent) 35%, transparent 80%);opacity:.75}
   #view{will-change:transform;touch-action:pan-y}
   html,body{overflow-x:hidden}
