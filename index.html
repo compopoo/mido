@@ -27,6 +27,8 @@
   html,body{margin:0;background:var(--bg);forced-color-adjust:none;color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:15px}
   button,input,select,textarea{font:inherit;color:inherit}
   .deco{position:absolute;top:0;left:0;right:0;height:85vh;min-height:520px;pointer-events:none;z-index:0;background:radial-gradient(ellipse 150% 100% at 0% 0%, var(--wave,#7aa7ff) 0%, color-mix(in srgb, var(--wave,#7aa7ff) 45%, transparent) 35%, transparent 80%);opacity:.75}
+  #view{will-change:transform;touch-action:pan-y}
+  html,body{overflow-x:hidden}
   .app{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px 150px;min-height:100vh}
   .gear{position:relative;width:38px;height:38px;border-radius:11px;background:var(--card);border:1px solid var(--line);font-size:18px;color:var(--sub);cursor:pointer;display:grid;place-items:center}
   .gear.on{border-color:var(--acc);color:var(--acc)}
@@ -933,7 +935,45 @@ function render(){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab)); updateGear();
   if(S.tab==='today') renderToday(); else if(S.tab==='history') renderHistory(); else if(S.tab==='stats') renderStats(); else if(S.tab==='ex') renderExercises(); else if(S.tab==='diet') renderDiet(); else renderMore();
 }
-document.querySelector('nav').addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(!b) return; S.tab=b.dataset.tab; S.armed=null; render(); window.scrollTo(0,0); });
+const TABS=['today','diet','history','stats','ex'];
+function goTab(tab, dir){ // dir: 1 = 오른쪽 탭으로(화면이 왼쪽으로 밀림), -1 = 왼쪽 탭으로
+  const v=$('#view'); if(tab===S.tab){ return; }
+  if(!dir){ dir = TABS.indexOf(tab) > TABS.indexOf(S.tab) ? 1 : -1; }
+  const fromX=v._dx||0; v._dx=0;
+  v.style.transition='transform .17s ease-in, opacity .17s ease-in';
+  v.style.transform=`translateX(${-dir*42}%)`; v.style.opacity='0';
+  setTimeout(()=>{
+    S.tab=tab; S.armed=null; render(); window.scrollTo(0,0);
+    v.style.transition='none'; v.style.transform=`translateX(${dir*42}%)`; v.style.opacity='0';
+    void v.offsetWidth;
+    v.style.transition='transform .26s cubic-bezier(.2,.8,.2,1), opacity .22s ease-out';
+    v.style.transform='translateX(0)'; v.style.opacity='1';
+    setTimeout(()=>{ v.style.transition=''; v.style.transform=''; v.style.opacity=''; },280);
+  },170);
+}
+document.querySelector('nav').addEventListener('click',ev=>{ const b=ev.target.closest('button'); if(!b) return; goTab(b.dataset.tab); });
+// 화면 좌우로 밀어서 탭 이동
+(function(){
+  const v=$('#view'); let sx=0, sy=0, st=0, dx=0, mode=null;
+  const blocked=t=>{ if(!S.tab||!TABS.includes(S.tab)) return true;
+    if(document.querySelector('.sheet:not(.hidden)') || !$('#modal').classList.contains('hidden') || document.querySelector('.pview')) return true;
+    for(let e=t; e && e!==v; e=e.parentElement){ if(e.matches && e.matches('input,textarea,select,.chips,.thumbs')) return true; if(e.scrollWidth>e.clientWidth+2 && getComputedStyle(e).overflowX!=='visible') return true; }
+    return false; };
+  v.addEventListener('touchstart',e=>{ if(e.touches.length!==1 || blocked(e.target)){ mode='no'; return; } const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); dx=0; mode=null; },{passive:true});
+  v.addEventListener('touchmove',e=>{ if(mode==='no') return; const t=e.touches[0]; const x=t.clientX-sx, y=t.clientY-sy;
+    if(mode===null){ if(Math.abs(x)<10 && Math.abs(y)<10) return; mode = Math.abs(x)>Math.abs(y)*1.3 ? 'h' : 'no'; if(mode==='no') return; v.style.transition='none'; }
+    const i=TABS.indexOf(S.tab); const edge=(x>0&&i===0)||(x<0&&i===TABS.length-1);
+    dx = edge ? x*0.25 : x; v._dx=dx;
+    v.style.transform=`translateX(${dx}px)`; v.style.opacity=String(1-Math.min(Math.abs(dx)/(innerWidth*1.4),0.45));
+    e.preventDefault(); },{passive:false});
+  v.addEventListener('touchend',()=>{ if(mode!=='h'){ mode=null; return; } mode=null;
+    const i=TABS.indexOf(S.tab), dt=Date.now()-st, fast=Math.abs(dx)>40 && dt<260;
+    const dir = dx<0 ? 1 : -1, ni=i+dir;
+    if((Math.abs(dx)>innerWidth*0.22 || fast) && ni>=0 && ni<TABS.length){ goTab(TABS[ni], dir); }
+    else { v.style.transition='transform .22s cubic-bezier(.2,.8,.2,1), opacity .2s'; v.style.transform='translateX(0)'; v.style.opacity='1'; setTimeout(()=>{ v.style.transition=''; v.style.transform=''; v.style.opacity=''; },240); }
+    dx=0; v._dx=0; });
+  v.addEventListener('touchcancel',()=>{ mode=null; v.style.transform=''; v.style.opacity=''; });
+})();
 
 $('#view').addEventListener('click',ev=>{
   const t=ev.target.closest('[data-act]'); if(!t) return;
