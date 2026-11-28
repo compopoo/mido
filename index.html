@@ -99,6 +99,8 @@
   nav button i{display:block;font-style:normal;font-size:19px;margin-bottom:2px}
   nav button.on{color:var(--tc,var(--acc));font-weight:600}
   nav button i svg{width:23px;height:23px;display:block;margin:0 auto 3px} nav button.on i svg{stroke-width:2.4}
+  nav button i{position:relative} nav button i:before{content:"";position:absolute;left:50%;top:50%;width:52px;height:52px;transform:translate(-50%,-50%) scale(.6);border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--wave,#7aa7ff) 75%,transparent) 0%,color-mix(in srgb,var(--wave,#7aa7ff) 30%,transparent) 45%,transparent 70%);opacity:0;transition:opacity .25s,transform .25s;z-index:-1;pointer-events:none}
+  nav button.on i:before{opacity:1;transform:translate(-50%,-50%) scale(1)} nav button i svg{position:relative}
   .timer{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));display:none;justify-content:center;padding:0 12px}
   .timer .in{max-width:516px;width:100%;background:#eef4ff;border:1px solid #c7d8fb;border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(20,30,50,.15)}
   .timer .t{font-family:"JetBrains Mono",monospace;font-size:26px;font-weight:700;color:var(--acc2);min-width:84px}
@@ -716,7 +718,7 @@ async function copyText(text, fallbackEl){
   catch(e){ if(fallbackEl){ fallbackEl.value=text; fallbackEl.classList.remove('hidden'); fallbackEl.focus(); fallbackEl.select(); } toast('아래 글을 길게 눌러 복사하세요'); return false; }
 }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2600); }
-const APP_VER='v70';
+const APP_VER='v71';
 function renderMore(){
   const n=Object.keys(S.logs).length;
   let last=''; try{ last=localStorage.getItem('setlog.lastBackup')||''; }catch(e){}
