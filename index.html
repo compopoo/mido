@@ -9,11 +9,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="운동일지">
+<meta name="apple-mobile-web-app-title" content="악어일지">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<title>운동일지</title>
+<title>악어일지</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
   :root{color-scheme:light only;
@@ -249,7 +249,7 @@
 <body>
 <div class="app">
   <header>
-    <div class="brand">운동<span>일지</span></div>
+    <div class="brand">악어<span>일지</span></div>
     <div style="display:flex;align-items:center;gap:10px"><div class="sync" id="sync"></div><button class="gear" id="gear" aria-label="설정">⚙<i class="rdot hidden" id="gdot"></i></button></div>
   </header>
   
@@ -691,7 +691,7 @@ function claudeText(days){
   const from = addDays(todayStr(),-(days-1));
   const logs = allLogs().filter(l=>l.date>=from && hasContent(l));
   if(!logs.length) return '';
-  const pf=profile(); let t = `[운동일지 기록 ${from} ~ ${todayStr()}]${num(pf.bmr)?` (기초대사량 ${pf.bmr}kcal${weightFor(todayStr())?`, 체중 ${weightFor(todayStr())}kg`:''})`:''}\n운동 기록이야. 17년 연구 기준(각 부위 주 2회, 고중량, 풀 가동범위, 주당 10~20세트, 중요한 운동 먼저)으로 봐 주고, 잘한 점 / 고칠 점 / 다음 주 바꿀 것을 알려줘.\n`;
+  const pf=profile(); let t = `[악어일지 기록 ${from} ~ ${todayStr()}]${num(pf.bmr)?` (기초대사량 ${pf.bmr}kcal${weightFor(todayStr())?`, 체중 ${weightFor(todayStr())}kg`:''})`:''}\n운동 기록이야. 17년 연구 기준(각 부위 주 2회, 고중량, 풀 가동범위, 주당 10~20세트, 중요한 운동 먼저)으로 봐 주고, 잘한 점 / 고칠 점 / 다음 주 바꿀 것을 알려줘.\n`;
   logs.forEach(l=>{ const d=parse(l.date);
     t += `\n${l.date}(${DOW[d.getDay()]}) ${titleOf(l)}${l.finishedAt?` · 운동 시간 ${durText(l)}`:''}\n`;
     (saved(l)?l.exercises:[]).filter(e=>e.sets.some(s=>s.done)).forEach(e=>{
@@ -734,7 +734,7 @@ function needBackup(){ const n=Object.keys(S.logs).length; if(n<3) return false;
 function updateGear(){ const d=document.getElementById('gdot'); if(d) d.classList.toggle('hidden',!needBackup()); const g=document.getElementById('gear'); if(g) g.classList.toggle('on',S.tab==='more'); }
 function mergeBackup(text){
   let data; try{ data=JSON.parse(text); }catch(e){ toast('백업 파일을 읽을 수 없어요'); return; }
-  const logs = data && data.logs; if(!logs || typeof logs!=='object'){ toast('운동일지 백업 파일이 아니에요'); return; }
+  const logs = data && data.logs; if(!logs || typeof logs!=='object'){ toast('악어일지 백업 파일이 아니에요'); return; }
   let added=0;
   for(const k in logs){ const r=logs[k]; if(!/^\d{4}-\d{2}-\d{2}$/.test(k) || !r || !Array.isArray(r.exercises)) continue;
     if(!S.logs[k] || (r.updatedAt||0) > (S.logs[k].updatedAt||0)){ S.logs[k]=r; delete S.local[k]; added++; } }
