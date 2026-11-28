@@ -1043,7 +1043,7 @@ function weightFor(date){ // 그날 또는 그 이전에 가장 최근 입력한
 }
 // 운동 소모 칼로리 (대략)
 function burnOf(l, date){
-  const wt=weightFor(date)||70; const r={weights:0,cardio:0,run:0,body:0};
+  const wt=weightFor(date)||65; const r={weights:0,cardio:0,run:0,body:0};
   if(!l) return {...r,total:0,wt};
   let cardioMin=0, wsets=0;
   l.exercises.forEach(e=>{ const done=e.sets.filter(s=>s.done);
@@ -1084,7 +1084,7 @@ function renderDiet(){
       <div class="muted" style="font-size:12.5px;margin:6px 0 12px">기초대사량의 <b style="color:var(--text)">${pct}%</b>를 먹었어요</div>
       <div class="krow"><span>기초대사량</span><span>${kc(bmr)}</span></div>
       <div class="krow"><span>일상 활동 <small>(기초대사량의 20%)</small></span><span>${kc(life)}</span></div>
-      <div class="krow"><span>운동 소모 <small>(${weightFor(date)?`체중 ${weightFor(date)}kg 기준`:'체중 넣으면 더 정확해요'})</small></span><span>${kc(B.total)}</span></div>
+      <div class="krow"><span>운동 소모 <small>(${weightFor(date)?`체중 ${weightFor(date)}kg 기준`:'체중 65kg 기준'})</small></span><span>${kc(B.total)}</span></div>
       ${B.total?`<div class="ksub">${[B.weights?`근력 ${kc(B.weights)}`:'',B.cardio?`유산소 ${kc(B.cardio)}`:'',B.run?`러닝 ${kc(B.run)}`:'',B.body?`푸쉬업·풀업 ${kc(B.body)}`:''].filter(Boolean).join(' · ')}</div>`:''}
       <div class="krow tot"><span>총 소모</span><span>${kc(out)}</span></div>
       <div class="kres ${intake?(diff>0?'plus':'minus'):''}">${intake? (diff>0?`<b>+${kc(diff)} kcal</b> 소모보다 더 먹었어요`:`<b>−${kc(-diff)} kcal</b> 소모보다 덜 먹었어요`) : '먹은 음식을 넣으면 오늘 수지가 나와요'}</div>
